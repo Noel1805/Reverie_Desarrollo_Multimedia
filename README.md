@@ -1,27 +1,27 @@
-<h1 align="center">✨ Reverie ✨</h1>
+<h1 align="center">✦ REVERIE ✦</h1>
 
 <p align="center">
 <b>Universidad Autónoma de Bucaramanga (UNAB)</b><br>
 Facultad de Ingeniería — Programa de Ingeniería de Sistemas<br>
 Asignatura: <b>Desarrollo Multimedia</b><br>
 Profesor: <b>Leonardo Stiven Pardo Niño</b><br>
-Periodo académico: <b>2025-1</b>
+Periodo académico: <b>2025-2</b>
 </p>
 
 ---
 
-### 👥 Integrantes
+<h2 align="center">—— INTEGRANTES ——</h2>
 
 | Nombre completo | Rol / Participación |
 |------------------|---------------------|
 | Noel Santiago Méndez Jaimes | Modelado y diseño de entorno |
 | Nicole Camila Niño Ariza | Programación y narrativa |
 | Zaira María Celis Rueda | Diseño visual y assets |
-| Juan Diego Niño Solano | Animación y soporte técnico |
+| Juan Diego Niño Solano | Animación y modelado |
 
 ---
 
-## 🕹️ Descripción general
+<h2 align="center">—— DESCRIPCIÓN GENERAL ——</h2>
 
 **Reverie** es un videojuego **3D tipo plataformero** desarrollado en *Unity*.  
 El jugador controla a **Kaven**, un mago que despierta en un mundo suspendido entre la vida y la muerte, dividido en tres estaciones —Primavera, Otoño e Invierno—.  
@@ -32,7 +32,8 @@ Cada estación representa una etapa del ciclo vital: **nacimiento, madurez y fin
 
 ---
 
-## 🌙 Lore  
+<h2 align="center">—— LORE ——</h2>
+
 <h4 align="center"><i>“El camino hacia la cabaña”</i></h4>
 
 Desperté en un fragmento de tierra suspendido entre la vida y la muerte.  
@@ -78,7 +79,7 @@ Entonces lo comprendí por completo:
 
 ---
 
-## 🪶 Universo y personajes
+<h2 align="center">—— UNIVERSO Y PERSONAJES ——</h2>
 
 | Personaje | Descripción |
 |------------|-------------|
@@ -90,7 +91,7 @@ Entonces lo comprendí por completo:
 
 ---
 
-## ⚙️ Mecánicas principales
+<h2 align="center">—— MECÁNICAS PRINCIPALES ——</h2>
 
 - Plataformero 3D con desplazamiento libre y exploración por niveles.  
 - Sistema de combate adaptado a los enemigos de cada estación.  
@@ -102,21 +103,20 @@ Entonces lo comprendí por completo:
 
 ---
 
-## 🧠 Tecnologías y herramientas
+<h2 align="center">—— TECNOLOGÍAS Y HERRAMIENTAS ——</h2>
 
 | Herramienta | Uso |
 |--------------|-----|
 | **Unity (3D)** | Motor de desarrollo principal |
 | **C#** | Lenguaje de programación |
 | **Autodesk Maya** | Modelado 3D y texturizado |
-| **Adobe Photoshop** | Diseño visual y retoque |
 | **Mixamo** | Integración y retargeting de animaciones |
 | **GitHub** | Control de versiones y documentación |
 | **Estilo visual:** | Low-poly simbólico con ambientación melancólica |
 
 ---
 
-<h3 align="center">Créditos</h3>
+<h2 align="center">—— CRÉDITOS ——</h2>
 
 <p align="center">
 Proyecto académico desarrollado para la asignatura <b>Desarrollo Multimedia</b><br>
