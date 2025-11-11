@@ -4,11 +4,11 @@ public class PlayerMovement : MonoBehaviour
 {
     [Header("Movimiento")]
     public float walkSpeed = 5f;            // Velocidad de caminar
-    public float sprintSpeed = 8f;          // Velocidad de correr
+    public float sprintSpeed = 10f;          // Velocidad de correr
     public float rotationSpeed = 10f;       // Suavidad de giro
-    public float jumpHeight = 2f;           // Altura del salto
-    public float gravity = -9.81f;          // Gravedad personalizada
-
+    public float jumpHeight = 0.1f;        // Altura del salto (muy reducida)
+    public float gravity = -20f;          // Gravedad personalizada
+    
     [Header("Referencias")]
     public Transform cameraTransform;       // Referencia a la cámara
     public Animator animator;               // Referencia al Animator
@@ -70,10 +70,10 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-
-            // Activar animación de salto
+            
+            // Activar animación de salto - CORREGIDO: "IsJumping" con I mayúscula
             if (animator != null)
-                animator.SetBool("isJumping", true);
+                animator.SetBool("IsJumping", true);
         }
 
         // Aplicar gravedad
@@ -102,10 +102,10 @@ public class PlayerMovement : MonoBehaviour
         // VerticalSpeed (para animaciones de caída/salto)
         animator.SetFloat("VerticalSpeed", velocity.y);
 
-        // Desactivar isJumping cuando toca el suelo
+        // Desactivar IsJumping cuando toca el suelo
         if (isGrounded && velocity.y <= 0f)
         {
-            animator.SetBool("isJumping", false);
+            animator.SetBool("IsJumping", false);
         }
     }
 }

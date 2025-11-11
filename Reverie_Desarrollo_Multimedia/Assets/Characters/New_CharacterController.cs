@@ -5,7 +5,7 @@ public class New_CharacterController : MonoBehaviour
 {
     [Header("Movimiento")]
     public float WalkSpeed = 0.67f;      // Reducido a 1/6 (4/6 = 0.67)
-    public float SrpintSpeed = 1f;       // Reducido a 1/6 (6/6 = 1)
+    public float SrpintSpeed = 1.2f;       // Reducido a 1/6 (6/6 = 1)
     public float jumpHeight = 0.33f;     // Reducido a 1/6 (2/6 = 0.33)
     public float rotationSpeed = 10f;
     public float gravity = -20f;
@@ -82,7 +82,7 @@ public class New_CharacterController : MonoBehaviour
         // Salto
         if (Input.GetButtonDown("Jump") && IsGrounded)
         {
-            Velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            Velocity.y = Mathf.Sqrt(jumpHeight * -1.5f * gravity);
 
             // CORREGIDO: Usar "IsJumping" con I mayúscula (según tu Animator)
             if (animator != null)
