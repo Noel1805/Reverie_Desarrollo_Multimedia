@@ -185,4 +185,6 @@ public class MovingPlatformRangeStable : MonoBehaviour
         Gizmos.DrawWireSphere(a, 0.12f);
         Gizmos.DrawWireSphere(b, 0.12f);
     }
+
+
 }
