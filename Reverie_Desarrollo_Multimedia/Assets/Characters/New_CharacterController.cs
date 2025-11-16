@@ -1,16 +1,16 @@
-using UnityEngine;
+锘縰sing UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
 public class New_CharacterController : MonoBehaviour
 {
     [Header("Movimiento")]
-    public float WalkSpeed = 0.67f;      // Reducido a 1/6 (4/6 = 0.67)
-    public float SrpintSpeed = 1.2f;       // Reducido a 1/6 (6/6 = 1)
-    public float jumpHeight = 0.6f;     // Reducido a 1/6 (2/6 = 0.33)
+    public float WalkSpeed = 0.67f; // Reducido a 1/6 (4/6 = 0.67)
+    public float SrpintSpeed = 1.2f; // Reducido a 1/6 (6/6 = 1)
+    public float jumpHeight = 0.6f; // Reducido a 1/6 (2/6 = 0.33)
     public float rotationSpeed = 10f;
     public float gravity = -20f;
 
-    [Header("Referenciaci髇")]
+    [Header("Referenciaci贸n")]
     public Transform cameraTransform;
     public Animator animator;
 
@@ -18,7 +18,7 @@ public class New_CharacterController : MonoBehaviour
     private Vector3 Velocity;
     private float currentSpeed;
     private Vector3 externalVelocity = Vector3.zero;
-    private float turnSmoothVelocity;  // Para rotaci髇 suave
+    private float turnSmoothVelocity; // Para rotaci贸n suave
 
     public bool IsMoving { get; private set; }
     public Vector2 CurrentInput { get; private set; }
@@ -28,7 +28,7 @@ public class New_CharacterController : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
 
-        // Si no se asigna c醡ara, usa la principal
+        // Si no se asigna c谩mara, usa la principal
         if (cameraTransform == null)
             cameraTransform = Camera.main.transform;
     }
@@ -53,6 +53,7 @@ public class New_CharacterController : MonoBehaviour
 
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
+
         Vector3 inputDirection = new Vector3(horizontal, 0f, vertical).normalized;
         IsMoving = inputDirection.magnitude > 0.1f;
 
@@ -64,14 +65,14 @@ public class New_CharacterController : MonoBehaviour
             bool isSprinting = Input.GetKey(KeyCode.LeftShift);
             currentSpeed = isSprinting ? SrpintSpeed : WalkSpeed;
 
-            // Calcular direcci髇 de movimiento relativa a la c醡ara
+            // Calcular direcci贸n de movimiento relativa a la c谩mara
             float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
 
-            // Rotaci髇 suave del personaje hacia la direcci髇 de movimiento
+            // Rotaci贸n suave del personaje hacia la direcci贸n de movimiento
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, rotationSpeed * Time.deltaTime);
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
-            // Direcci髇 de movimiento basada en la c醡ara
+            // Direcci贸n de movimiento basada en la c谩mara
             moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
         }
         else
@@ -84,7 +85,7 @@ public class New_CharacterController : MonoBehaviour
         {
             Velocity.y = Mathf.Sqrt(jumpHeight * -1.5f * gravity);
 
-            // CORREGIDO: Usar "IsJumping" con I may鷖cula (seg鷑 tu Animator)
+            // CORREGIDO: Usar "IsJumping" con I may煤scula (seg煤n tu Animator)
             if (animator != null)
                 animator.SetBool("IsJumping", true);
         }
@@ -98,7 +99,7 @@ public class New_CharacterController : MonoBehaviour
 
         characterController.Move(finalMovement);
 
-        // Desactivar animaci髇 de salto al tocar suelo
+        // Desactivar animaci贸n de salto al tocar suelo
         if (IsGrounded && Velocity.y < 0f)
         {
             if (animator != null)
@@ -111,6 +112,7 @@ public class New_CharacterController : MonoBehaviour
         if (animator == null) return;
 
         float SpeedPercent = IsMoving ? (currentSpeed == SrpintSpeed ? 1f : 0.5f) : 0f;
+
         animator.SetFloat("Speed", SpeedPercent, 0.1f, Time.deltaTime);
         animator.SetBool("IsGrounded", IsGrounded);
         animator.SetFloat("VerticalSpeed", Velocity.y);
