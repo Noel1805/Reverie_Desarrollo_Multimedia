@@ -4,13 +4,14 @@
 public class New_CharacterController : MonoBehaviour
 {
     [Header("Movimiento")]
-    public float WalkSpeed = 0.67f; // Reducido a 1/6 (4/6 = 0.67)
-    public float SrpintSpeed = 1.2f; // Reducido a 1/6 (6/6 = 1)
-    public float jumpHeight = 0.6f; // Reducido a 1/6 (2/6 = 0.33)
+    public float WalkSpeed = 0.67f;
+    public float SrpintSpeed = 1.2f;
+    public float jumpHeight = 0.6f;
     public float rotationSpeed = 10f;
     public float gravity = -20f;
 
     [Header("Referenciación")]
+    [Tooltip("Transform de la cámara (Main Camera)")]
     public Transform cameraTransform;
     public Animator animator;
 
@@ -18,7 +19,7 @@ public class New_CharacterController : MonoBehaviour
     private Vector3 Velocity;
     private float currentSpeed;
     private Vector3 externalVelocity = Vector3.zero;
-    private float turnSmoothVelocity; // Para rotación suave
+    private float turnSmoothVelocity;
 
     public bool IsMoving { get; private set; }
     public Vector2 CurrentInput { get; private set; }
@@ -29,35 +30,39 @@ public class New_CharacterController : MonoBehaviour
         characterController = GetComponent<CharacterController>();
 
         // Si no se asigna cámara, usa la principal
-        if (cameraTransform == null)
+        if (cameraTransform == null && Camera.main != null)
             cameraTransform = Camera.main.transform;
+
+        // Si no se asigna animator, intenta obtenerlo del objeto
+        if (animator == null)
+            animator = GetComponent<Animator>();
     }
 
     void Update()
     {
         HandleMovement();
-        updateAnimator();
+        UpdateAnimator();
     }
 
     void HandleMovement()
     {
+        // Detectar si está en el suelo
         IsGrounded = characterController.isGrounded;
 
         if (IsGrounded && Velocity.y < 0)
         {
-            if (externalVelocity.y > -0.05f && externalVelocity.y < 0.05f)
-                Velocity.y = 0;
-            else
-                Velocity.y = -2f;
+            Velocity.y = -2f; // mantenerlo pegado al suelo
         }
 
+        // Input de movimiento
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
+        CurrentInput = new Vector2(horizontal, vertical);
 
         Vector3 inputDirection = new Vector3(horizontal, 0f, vertical).normalized;
-        IsMoving = inputDirection.magnitude > 0.1f;
+        IsMoving = inputDirection.magnitude >= 0.1f;
 
-        Vector3 moveDirection = Vector3.zero;
+        Vector3 moveDir = Vector3.zero;
 
         if (IsMoving)
         {
@@ -65,27 +70,33 @@ public class New_CharacterController : MonoBehaviour
             bool isSprinting = Input.GetKey(KeyCode.LeftShift);
             currentSpeed = isSprinting ? SrpintSpeed : WalkSpeed;
 
-            // Calcular dirección de movimiento relativa a la cámara
-            float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
+            // Ángulo según la cámara (SOLO usamos su yaw)
+            float camYaw = (cameraTransform != null) ? cameraTransform.eulerAngles.y : 0f;
+            float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + camYaw;
 
-            // Rotación suave del personaje hacia la dirección de movimiento
-            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, rotationSpeed * Time.deltaTime);
+            float angle = Mathf.SmoothDampAngle(
+                transform.eulerAngles.y,
+                targetAngle,
+                ref turnSmoothVelocity,
+                rotationSpeed * Time.deltaTime
+            );
+
+            // Girar el personaje
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
-            // Dirección de movimiento basada en la cámara
-            moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
+            // Mover según la dirección de la cámara
+            moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
         }
         else
         {
             currentSpeed = 0f;
         }
 
-        // Salto
+        // Salto (con tecla Espacio)
         if (Input.GetButtonDown("Jump") && IsGrounded)
         {
-            Velocity.y = Mathf.Sqrt(jumpHeight * -1.5f * gravity);
+            Velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
 
-            // CORREGIDO: Usar "IsJumping" con I mayúscula (según tu Animator)
             if (animator != null)
                 animator.SetBool("IsJumping", true);
         }
@@ -94,27 +105,38 @@ public class New_CharacterController : MonoBehaviour
         Velocity.y += gravity * Time.deltaTime;
 
         // Movimiento final
-        Vector3 finalMovement = (moveDirection * currentSpeed + externalVelocity) * Time.deltaTime;
+        Vector3 finalMovement = (moveDir * currentSpeed + externalVelocity) * Time.deltaTime;
         finalMovement.y += Velocity.y * Time.deltaTime;
 
         characterController.Move(finalMovement);
 
-        // Desactivar animación de salto al tocar suelo
-        if (IsGrounded && Velocity.y < 0f)
+        // Desactivar IsJumping cuando toca el suelo
+        if (IsGrounded && Velocity.y <= 0f)
         {
             if (animator != null)
                 animator.SetBool("IsJumping", false);
         }
     }
 
-    void updateAnimator()
+    void UpdateAnimator()
     {
         if (animator == null) return;
 
-        float SpeedPercent = IsMoving ? (currentSpeed == SrpintSpeed ? 1f : 0.5f) : 0f;
+        // Speed: 0 = idle, 0.5 = walk, 1 = sprint
+        float SpeedPercent = 0f;
+        if (IsMoving)
+        {
+            SpeedPercent = (currentSpeed == SrpintSpeed) ? 1f : 0.5f;
+        }
 
         animator.SetFloat("Speed", SpeedPercent, 0.1f, Time.deltaTime);
         animator.SetBool("IsGrounded", IsGrounded);
         animator.SetFloat("VerticalSpeed", Velocity.y);
+    }
+
+    // Método público para aplicar fuerzas externas (si lo usas)
+    public void AddExternalVelocity(Vector3 velocity)
+    {
+        externalVelocity = velocity;
     }
 }
