@@ -1,4 +1,5 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
+using System.Collections.Generic;
 
 public class MovingPlatformHorizontal : MonoBehaviour
 {
@@ -8,11 +9,11 @@ public class MovingPlatformHorizontal : MonoBehaviour
         Right,      // Derecha (X+)
         Left,       // Izquierda (X-)
         Forward,    // Adelante (Z+)
-        Backward    // Atr·s (Z-)
+        Backward    // Atr√°s (Z-)
     }
 
-    [Header("DirecciÛn Horizontal")]
-    [Tooltip("DirecciÛn del movimiento horizontal.")]
+    [Header("Direcci√≥n Horizontal")]
+    [Tooltip("Direcci√≥n del movimiento horizontal.")]
     public HorizontalDirection horizontalDirection = HorizontalDirection.Right;
 
     [Header("Distancia")]
@@ -20,39 +21,53 @@ public class MovingPlatformHorizontal : MonoBehaviour
     [Min(0f)] public float distance = 5f;
 
     [Header("Velocidad")]
-    [Tooltip("Tiempo de TRAYECTO entre A y B (y tambiÈn entre B y A). No incluye esperas.")]
+    [Tooltip("Tiempo de TRAYECTO entre A y B (y tambi√©n entre B y A). No incluye esperas.")]
     [Min(0.0001f)] public float travelTime = 3f;
 
     [Header("Tiempos de espera")]
-    [Min(0f)] public float waitAtA = 2.0f; // pausa en A
-    [Min(0f)] public float waitAtB = 2.0f; // pausa en B
+    [Min(0f)] public float waitAtA = 2.0f;
+    [Min(0f)] public float waitAtB = 2.0f;
 
     [Header("Arranque")]
     public StartPoint startAt = StartPoint.PositionA;
 
-    [Header("Movimiento con fÌsicas (opcional)")]
+    [Header("Movimiento con f√≠sicas (opcional)")]
     [Tooltip("Si hay Rigidbody (recomendado isKinematic=true), mover con MovePosition en FixedUpdate.")]
     public bool useRigidbody = false;
 
+    [Header("Detecci√≥n de Jugador")]
+    [Tooltip("Altura del trigger detector sobre la plataforma")]
+    public float detectorHeight = 0.5f;
+
+    [Header("M√©todo de Movimiento")]
+    [Tooltip("TRUE: Hacer hijo (mejor para rotaciones). FALSE: Mover con delta (mejor para CharacterController)")]
+    public bool useParenting = true; // ‚≠ê CAMBIADO A TRUE POR DEFECTO
+
     // ---- Internos ----
-    private Vector3 A;      // posiciÛn base (Editor)
-    private Vector3 B;      // A + direcciÛn horizontal * distance
-    private float cycle;    // duraciÛn total del ciclo
-    private float phase;    // lÌnea de tiempo acumulada
+    private Vector3 A;
+    private Vector3 B;
+    private float cycle;
+    private float phase;
     private Rigidbody rb;
     private Vector3 finalDirection;
+
+    // Sistema de jugadores
+    private Vector3 lastPosition;
+    private Dictionary<Transform, Transform> playersOriginalParent = new Dictionary<Transform, Transform>();
+    private HashSet<Transform> playersOnPlatform = new HashSet<Transform>();
+    private GameObject triggerDetector;
+
+    // ‚≠ê NUEVO: Para almacenar el delta de movimiento
+    private Vector3 platformDelta;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
-
-        // Capturar A al iniciar
         A = transform.position;
+        lastPosition = transform.position;
 
-        // Determinar la direcciÛn seg˙n el tipo seleccionado
+        // Determinar direcci√≥n
         finalDirection = GetHorizontalDirection();
-
-        // Normalizar y calcular B
         finalDirection = finalDirection.normalized;
         distance = Mathf.Abs(distance);
         B = A + finalDirection * distance;
@@ -61,7 +76,7 @@ public class MovingPlatformHorizontal : MonoBehaviour
         cycle = waitAtA + travelTime + waitAtB + travelTime;
         if (cycle < 0.0001f) cycle = 0.0001f;
 
-        // Inicializar phase seg˙n arranque
+        // Inicializar phase
         switch (startAt)
         {
             case StartPoint.PositionA:
@@ -73,25 +88,57 @@ public class MovingPlatformHorizontal : MonoBehaviour
                 SetPositionImmediate(B);
                 break;
         }
+
+        // Crear detector de jugadores
+        CrearTriggerDetector();
     }
 
-    // Obtener la direcciÛn horizontal seg˙n el tipo seleccionado
+    void CrearTriggerDetector()
+    {
+        triggerDetector = new GameObject("PlayerDetector_Horizontal");
+        triggerDetector.transform.SetParent(transform);
+        triggerDetector.transform.localPosition = Vector3.zero;
+        triggerDetector.layer = gameObject.layer;
+
+        BoxCollider triggerCollider = triggerDetector.AddComponent<BoxCollider>();
+        triggerCollider.isTrigger = true;
+
+        BoxCollider platformCollider = GetComponent<BoxCollider>();
+        if (platformCollider != null)
+        {
+            triggerCollider.size = new Vector3(
+                platformCollider.size.x,
+                detectorHeight,
+                platformCollider.size.z
+            );
+            triggerCollider.center = new Vector3(
+                platformCollider.center.x,
+                platformCollider.center.y + (platformCollider.size.y / 2) + (detectorHeight / 2),
+                platformCollider.center.z
+            );
+        }
+        else
+        {
+            triggerCollider.size = new Vector3(1, detectorHeight, 1);
+            triggerCollider.center = new Vector3(0, detectorHeight / 2, 0);
+        }
+
+        HorizontalPlatformDetector detector = triggerDetector.AddComponent<HorizontalPlatformDetector>();
+        detector.Initialize(this);
+    }
+
     Vector3 GetHorizontalDirection()
     {
         switch (horizontalDirection)
         {
             case HorizontalDirection.Right:
-                return Vector3.right;       // (1, 0, 0)
-
+                return Vector3.right;
             case HorizontalDirection.Left:
-                return Vector3.left;        // (-1, 0, 0)
-
+                return Vector3.left;
             case HorizontalDirection.Forward:
-                return Vector3.forward;     // (0, 0, 1)
-
+                return Vector3.forward;
             case HorizontalDirection.Backward:
-                return Vector3.back;        // (0, 0, -1)
-
+                return Vector3.back;
             default:
                 return Vector3.right;
         }
@@ -113,6 +160,15 @@ public class MovingPlatformHorizontal : MonoBehaviour
         AplicarPosicion(true);
     }
 
+    // ‚≠ê NUEVO: LateUpdate para mover jugadores DESPU√âS de que se hayan movido ellos mismos
+    void LateUpdate()
+    {
+        if (!useParenting)
+        {
+            MoverJugadores();
+        }
+    }
+
     void AvanzarLineaDeTiempo(float dt)
     {
         phase += dt;
@@ -124,40 +180,45 @@ public class MovingPlatformHorizontal : MonoBehaviour
 
     void AplicarPosicion(bool viaRigidbody = false)
     {
+        // ‚≠ê Guardar posici√≥n ANTES de mover
+        Vector3 posicionAnterior = transform.position;
+
         float p = phase;
 
         if (p < waitAtA)
         {
-            // Pausa en A
             SetPosition(A, viaRigidbody);
-            return;
         }
-        p -= waitAtA;
-
-        if (p < travelTime)
+        else
         {
-            // Movimiento A -> B
-            float t = p / travelTime;
-            Vector3 target = Vector3.LerpUnclamped(A, B, t);
-            SetPosition(target, viaRigidbody);
-            return;
-        }
-        p -= travelTime;
+            p -= waitAtA;
 
-        if (p < waitAtB)
-        {
-            // Pausa en B
-            SetPosition(B, viaRigidbody);
-            return;
-        }
-        p -= waitAtB;
+            if (p < travelTime)
+            {
+                float t = p / travelTime;
+                Vector3 target = Vector3.LerpUnclamped(A, B, t);
+                SetPosition(target, viaRigidbody);
+            }
+            else
+            {
+                p -= travelTime;
 
-        // Movimiento B -> A
-        {
-            float t = p / travelTime;
-            Vector3 target = Vector3.LerpUnclamped(B, A, t);
-            SetPosition(target, viaRigidbody);
+                if (p < waitAtB)
+                {
+                    SetPosition(B, viaRigidbody);
+                }
+                else
+                {
+                    p -= waitAtB;
+                    float t = p / travelTime;
+                    Vector3 target = Vector3.LerpUnclamped(B, A, t);
+                    SetPosition(target, viaRigidbody);
+                }
+            }
         }
+
+        // ‚≠ê Calcular delta DESPU√âS de mover
+        platformDelta = transform.position - posicionAnterior;
     }
 
     void SetPosition(Vector3 pos, bool viaRigidbody)
@@ -184,38 +245,131 @@ public class MovingPlatformHorizontal : MonoBehaviour
         }
     }
 
+    void MoverJugadores()
+    {
+        // ‚≠ê Usar el delta calculado en AplicarPosicion
+        if (platformDelta.sqrMagnitude > 0.0001f)
+        {
+            foreach (Transform player in playersOnPlatform)
+            {
+                if (player != null)
+                {
+                    CharacterController cc = player.GetComponent<CharacterController>();
+                    if (cc != null)
+                    {
+                        // ‚≠ê Mover con CharacterController
+                        cc.Move(platformDelta);
+                    }
+                    else
+                    {
+                        // ‚≠ê Si no tiene CharacterController, mover directamente
+                        player.position += platformDelta;
+                    }
+                }
+            }
+        }
+
+        // ‚≠ê Resetear delta
+        platformDelta = Vector3.zero;
+    }
+
+    public void AddPlayer(Transform player)
+    {
+        if (playersOnPlatform.Contains(player))
+            return;
+
+        playersOnPlatform.Add(player);
+
+        if (useParenting)
+        {
+            // Guardar padre original
+            playersOriginalParent[player] = player.parent;
+
+            // Hacer hijo de la plataforma
+            player.SetParent(transform);
+
+            // ‚≠ê NUEVO: Debug para confirmar
+            Debug.Log($"Jugador {player.name} subi√≥ a la plataforma (PARENTING)");
+        }
+        else
+        {
+            Debug.Log($"Jugador {player.name} subi√≥ a la plataforma (DELTA MOVEMENT)");
+        }
+    }
+
+    public void RemovePlayer(Transform player)
+    {
+        if (!playersOnPlatform.Contains(player))
+            return;
+
+        playersOnPlatform.Remove(player);
+
+        if (useParenting)
+        {
+            // Restaurar padre original
+            if (playersOriginalParent.ContainsKey(player))
+            {
+                player.SetParent(playersOriginalParent[player]);
+                playersOriginalParent.Remove(player);
+            }
+            else
+            {
+                player.SetParent(null);
+            }
+
+            Debug.Log($"Jugador {player.name} baj√≥ de la plataforma (PARENTING)");
+        }
+        else
+        {
+            Debug.Log($"Jugador {player.name} baj√≥ de la plataforma (DELTA MOVEMENT)");
+        }
+    }
+
     void OnDrawGizmosSelected()
     {
-        // En Editor: mostrar la trayectoria horizontal
         Vector3 a = Application.isPlaying ? A : transform.position;
         Vector3 dir = Application.isPlaying ? finalDirection : GetHorizontalDirection();
         float d = distance;
         Vector3 b = a + dir * d;
 
-        // LÌnea de trayectoria
         Gizmos.color = Color.magenta;
         Gizmos.DrawLine(a, b);
 
-        // Punto A (inicio)
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(a, 0.15f);
 
-        // Punto B (final)
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(b, 0.15f);
 
-        // Flecha para indicar direcciÛn
         Vector3 midPoint = (a + b) / 2f;
         Gizmos.color = Color.cyan;
         DrawArrow(midPoint, dir * 0.5f);
 
-        // Etiqueta de direcciÛn
+        if (!Application.isPlaying)
+        {
+            BoxCollider platformCollider = GetComponent<BoxCollider>();
+            if (platformCollider != null)
+            {
+                Gizmos.color = new Color(0, 1, 0, 0.3f);
+                Vector3 detectorSize = new Vector3(
+                    platformCollider.size.x,
+                    detectorHeight,
+                    platformCollider.size.z
+                );
+                Vector3 detectorCenter = transform.position + new Vector3(
+                    platformCollider.center.x,
+                    platformCollider.center.y + (platformCollider.size.y / 2) + (detectorHeight / 2),
+                    platformCollider.center.z
+                );
+                Gizmos.DrawCube(detectorCenter, detectorSize);
+            }
+        }
+
 #if UNITY_EDITOR
         UnityEditor.Handles.Label(midPoint + Vector3.up * 0.3f, horizontalDirection.ToString());
 #endif
     }
 
-    // Dibujar una flecha en los Gizmos
     void DrawArrow(Vector3 pos, Vector3 direction)
     {
         Gizmos.DrawRay(pos, direction);
@@ -223,5 +377,31 @@ public class MovingPlatformHorizontal : MonoBehaviour
         Vector3 left = Quaternion.LookRotation(direction) * Quaternion.Euler(0, 180 - 20, 0) * new Vector3(0, 0, 1);
         Gizmos.DrawRay(pos + direction, right * 0.3f);
         Gizmos.DrawRay(pos + direction, left * 0.3f);
+    }
+}
+
+public class HorizontalPlatformDetector : MonoBehaviour
+{
+    private MovingPlatformHorizontal platform;
+
+    public void Initialize(MovingPlatformHorizontal plat)
+    {
+        platform = plat;
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            platform.AddPlayer(other.transform);
+        }
+    }
+
+    void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            platform.RemovePlayer(other.transform);
+        }
     }
 }

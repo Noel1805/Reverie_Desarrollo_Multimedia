@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-
 /// <summary>
 /// Script para el jugador que maneja el sistema de respawn en checkpoints
 /// OPTIMIZADO PARA CHARACTER CONTROLLER
@@ -10,28 +9,22 @@ public class PlayerCheckpointSystem : MonoBehaviour
     [SerializeField] private float limiteY = -10f; // Límite Y para activar respawn
     [SerializeField] private float alturaRespawn = 2f; // Altura adicional al respawnear
     [SerializeField] private float tiempoInvulnerabilidad = 1f; // Tiempo sin detectar caídas después de respawn
-
     private Vector3 ultimoCheckpoint;
     private bool checkpointActivo = false;
     private float tiempoUltimoRespawn;
     private CharacterController characterController;
-
     void Start()
     {
         // Obtener Character Controller
         characterController = GetComponent<CharacterController>();
-
         if (characterController == null)
         {
             Debug.LogError("¡El jugador necesita un Character Controller!");
         }
-
         // Guardar posición inicial como primer checkpoint
         GuardarCheckpoint(transform.position);
-
         tiempoUltimoRespawn = -tiempoInvulnerabilidad;
     }
-
     void Update()
     {
         // Verificar si el jugador cayó por debajo del límite
@@ -44,7 +37,6 @@ public class PlayerCheckpointSystem : MonoBehaviour
             }
         }
     }
-
     /// <summary>
     /// CHARACTER CONTROLLER usa OnControllerColliderHit en lugar de OnCollisionEnter
     /// </summary>
@@ -52,7 +44,6 @@ public class PlayerCheckpointSystem : MonoBehaviour
     {
         // Verificar si tocó una isla (que tenga el componente IslaCheckpoint)
         IslaCheckpoint isla = hit.gameObject.GetComponent<IslaCheckpoint>();
-
         if (isla != null)
         {
             // Verificar que está tocando desde arriba (no los lados)
@@ -62,7 +53,6 @@ public class PlayerCheckpointSystem : MonoBehaviour
             }
         }
     }
-
     /// <summary>
     /// Guarda una nueva posición de checkpoint
     /// </summary>
@@ -70,10 +60,8 @@ public class PlayerCheckpointSystem : MonoBehaviour
     {
         ultimoCheckpoint = nuevaPosicion + Vector3.up * alturaRespawn;
         checkpointActivo = true;
-
         Debug.Log($"✓✓✓ Checkpoint guardado en: {ultimoCheckpoint} ✓✓✓");
     }
-
     /// <summary>
     /// Respawnea al jugador en el último checkpoint
     /// </summary>
@@ -84,21 +72,24 @@ public class PlayerCheckpointSystem : MonoBehaviour
         {
             characterController.enabled = false;
         }
-
         // Mover al checkpoint
         transform.position = ultimoCheckpoint;
-
         // Reactivar Character Controller
         if (characterController != null)
         {
             characterController.enabled = true;
         }
-
         tiempoUltimoRespawn = Time.time;
+
+        // Quitar vida por caída
+        VidaKaven vidaKaven = GetComponent<VidaKaven>();
+        if (vidaKaven != null && vidaKaven.EstaVivo())
+        {
+            vidaKaven.RecibirDano(2f); // Quita 1 corazón completo (2 puntos)
+        }
 
         Debug.Log($"Jugador respawneado en: {ultimoCheckpoint}");
     }
-
     // Método público por si necesitas forzar un respawn desde otro script
     public void ForzarRespawn()
     {
@@ -107,7 +98,6 @@ public class PlayerCheckpointSystem : MonoBehaviour
             Respawnear();
         }
     }
-
     // Para visualizar el límite de caída en el editor
     void OnDrawGizmos()
     {
@@ -116,7 +106,6 @@ public class PlayerCheckpointSystem : MonoBehaviour
             new Vector3(-1000, limiteY, 0),
             new Vector3(1000, limiteY, 0)
         );
-
         if (checkpointActivo && Application.isPlaying)
         {
             Gizmos.color = Color.green;

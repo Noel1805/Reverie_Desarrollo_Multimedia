@@ -10,6 +10,11 @@ public class New_CharacterController : MonoBehaviour
     public float rotationSpeed = 10f;
     public float gravity = -20f;
 
+    [Header("Plataformas Verticales")]
+    [Tooltip("Multiplicador para seguir plataformas verticales")]
+    [Range(1f, 3f)]
+    public float verticalPlatformStickiness = 1.5f;
+
     [Header("Referenciación")]
     [Tooltip("Transform de la cámara (Main Camera)")]
     public Transform cameraTransform;
@@ -20,6 +25,11 @@ public class New_CharacterController : MonoBehaviour
     private float currentSpeed;
     private Vector3 externalVelocity = Vector3.zero;
     private float turnSmoothVelocity;
+
+    // Detección de plataformas verticales
+    private Transform verticalPlatform;
+    private Vector3 lastPlatformPosition;
+    private bool wasOnVerticalPlatform;
 
     public bool IsMoving { get; private set; }
     public Vector2 CurrentInput { get; private set; }
@@ -40,8 +50,65 @@ public class New_CharacterController : MonoBehaviour
 
     void Update()
     {
+        DetectVerticalPlatform();
         HandleMovement();
         UpdateAnimator();
+    }
+
+    void DetectVerticalPlatform()
+    {
+        // Solo detectar si estamos en el suelo
+        if (!characterController.isGrounded)
+        {
+            verticalPlatform = null;
+            wasOnVerticalPlatform = false;
+            return;
+        }
+
+        // Raycast corto hacia abajo
+        RaycastHit hit;
+        float rayDistance = characterController.height / 2f + 0.2f;
+
+        if (Physics.Raycast(transform.position, Vector3.down, out hit, rayDistance))
+        {
+            // Buscar MovingPlatformRangeStable
+            MovingPlatformRangeStable platform = hit.collider.GetComponentInParent<MovingPlatformRangeStable>();
+
+            if (platform != null)
+            {
+                // Si es una nueva plataforma
+                if (verticalPlatform != platform.transform)
+                {
+                    verticalPlatform = platform.transform;
+                    lastPlatformPosition = verticalPlatform.position;
+                    wasOnVerticalPlatform = false;
+                }
+                else
+                {
+                    // Calcular movimiento de la plataforma
+                    Vector3 platformDelta = verticalPlatform.position - lastPlatformPosition;
+
+                    // Mover al jugador con la plataforma (especialmente en Y)
+                    if (platformDelta.magnitude > 0.0001f)
+                    {
+                        characterController.Move(platformDelta * verticalPlatformStickiness);
+                    }
+
+                    lastPlatformPosition = verticalPlatform.position;
+                    wasOnVerticalPlatform = true;
+                }
+            }
+            else
+            {
+                verticalPlatform = null;
+                wasOnVerticalPlatform = false;
+            }
+        }
+        else
+        {
+            verticalPlatform = null;
+            wasOnVerticalPlatform = false;
+        }
     }
 
     void HandleMovement()
@@ -70,7 +137,7 @@ public class New_CharacterController : MonoBehaviour
             bool isSprinting = Input.GetKey(KeyCode.LeftShift);
             currentSpeed = isSprinting ? SrpintSpeed : WalkSpeed;
 
-            // Ángulo según la cámara (SOLO usamos su yaw)
+            // Ángulo según la cámara
             float camYaw = (cameraTransform != null) ? cameraTransform.eulerAngles.y : 0f;
             float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + camYaw;
 
@@ -92,7 +159,7 @@ public class New_CharacterController : MonoBehaviour
             currentSpeed = 0f;
         }
 
-        // Salto (con tecla Espacio)
+        // Salto
         if (Input.GetButtonDown("Jump") && IsGrounded)
         {
             Velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
@@ -101,8 +168,9 @@ public class New_CharacterController : MonoBehaviour
                 animator.SetBool("IsJumping", true);
         }
 
-        // Aplicar gravedad
-        Velocity.y += gravity * Time.deltaTime;
+        // Aplicar gravedad (reducida si estamos en plataforma vertical)
+        float gravityMultiplier = wasOnVerticalPlatform ? 0.3f : 1f;
+        Velocity.y += gravity * gravityMultiplier * Time.deltaTime;
 
         // Movimiento final
         Vector3 finalMovement = (moveDir * currentSpeed + externalVelocity) * Time.deltaTime;
@@ -134,9 +202,20 @@ public class New_CharacterController : MonoBehaviour
         animator.SetFloat("VerticalSpeed", Velocity.y);
     }
 
-    // Método público para aplicar fuerzas externas (si lo usas)
+    // Método público para aplicar fuerzas externas
     public void AddExternalVelocity(Vector3 velocity)
     {
         externalVelocity = velocity;
+    }
+
+    // Debug visual
+    void OnDrawGizmos()
+    {
+        if (!Application.isPlaying || characterController == null) return;
+
+        // Raycast de detección
+        Gizmos.color = wasOnVerticalPlatform ? Color.green : Color.yellow;
+        float rayDistance = characterController.height / 2f + 0.2f;
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * rayDistance);
     }
 }
