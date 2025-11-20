@@ -10,8 +10,8 @@ public class ButtonRayEffect : MonoBehaviour, IPointerEnterHandler, IPointerExit
     [SerializeField] private float scaleDuration = 0.2f;
 
     [Header("Configuración de Resplandor")]
-    [SerializeField] private Color glowColor1 = new Color(0.3f, 0.7f, 1f, 1f); // Azul cyan
-    [SerializeField] private Color glowColor2 = new Color(1f, 0.3f, 0.8f, 1f); // Rosa/Magenta
+    [SerializeField] private Color glowColor1 = new Color(0.3f, 0.7f, 1f, 1f);
+    [SerializeField] private Color glowColor2 = new Color(1f, 0.3f, 0.8f, 1f);
     [SerializeField] private float colorTransitionSpeed = 1.5f;
     [SerializeField] private float pulseSpeed = 3f;
     [SerializeField] private float minIntensity = 0.5f;
@@ -103,12 +103,17 @@ public class ButtonRayEffect : MonoBehaviour, IPointerEnterHandler, IPointerExit
     {
         isHovering = true;
 
+        Debug.Log($"Cursor sobre botón: {gameObject.name}");
+
         if (scaleCoroutine != null)
             StopCoroutine(scaleCoroutine);
         scaleCoroutine = StartCoroutine(ScaleButton(originalScale * hoverScale));
 
         if (glowObject != null)
+        {
             glowObject.SetActive(true);
+            Debug.Log("Glow activado");
+        }
 
         if (pulseCoroutine != null)
             StopCoroutine(pulseCoroutine);
@@ -118,6 +123,8 @@ public class ButtonRayEffect : MonoBehaviour, IPointerEnterHandler, IPointerExit
     public void OnPointerExit(PointerEventData eventData)
     {
         isHovering = false;
+
+        Debug.Log($"Cursor salió del botón: {gameObject.name}");
 
         if (scaleCoroutine != null)
             StopCoroutine(scaleCoroutine);
@@ -135,7 +142,8 @@ public class ButtonRayEffect : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
         while (elapsed < scaleDuration)
         {
-            elapsed += Time.deltaTime;
+            // CRÍTICO: Usar unscaledDeltaTime para que funcione con Time.timeScale = 0
+            elapsed += Time.unscaledDeltaTime;
             float t = Mathf.SmoothStep(0f, 1f, elapsed / scaleDuration);
             transform.localScale = Vector3.Lerp(startScale, targetScale, t);
             yield return null;
@@ -146,7 +154,13 @@ public class ButtonRayEffect : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     private IEnumerator PulseGlow()
     {
-        if (glowImage == null) yield break;
+        if (glowImage == null)
+        {
+            Debug.LogError("glowImage es null!");
+            yield break;
+        }
+
+        Debug.Log("Iniciando PulseGlow");
 
         // Fade in inicial
         float fadeInTime = 0.2f;
@@ -154,22 +168,27 @@ public class ButtonRayEffect : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
         while (elapsed < fadeInTime)
         {
-            elapsed += Time.deltaTime;
+            // CRÍTICO: Usar unscaledDeltaTime
+            elapsed += Time.unscaledDeltaTime;
             float alpha = Mathf.Lerp(0f, minIntensity, elapsed / fadeInTime);
             glowImage.color = new Color(glowColor1.r, glowColor1.g, glowColor1.b, alpha);
             yield return null;
         }
 
+        Debug.Log("Fade in completado, iniciando pulso continuo");
+
         // Pulso continuo con transición de colores
+        float timeAccumulator = 0f;
         while (isHovering)
         {
-            float time = Time.time;
+            // CRÍTICO: Usar unscaledDeltaTime y acumular tiempo manualmente
+            timeAccumulator += Time.unscaledDeltaTime;
 
             // Pulsación de intensidad
-            float pulse = Mathf.Lerp(minIntensity, maxIntensity, (Mathf.Sin(time * pulseSpeed) + 1f) / 2f);
+            float pulse = Mathf.Lerp(minIntensity, maxIntensity, (Mathf.Sin(timeAccumulator * pulseSpeed) + 1f) / 2f);
 
             // Transición de color entre color1 y color2
-            float colorLerp = (Mathf.Sin(time * colorTransitionSpeed) + 1f) / 2f;
+            float colorLerp = (Mathf.Sin(timeAccumulator * colorTransitionSpeed) + 1f) / 2f;
             Color currentColor = Color.Lerp(glowColor1, glowColor2, colorLerp);
 
             // Aplicar color con pulsación de alpha
@@ -178,11 +197,13 @@ public class ButtonRayEffect : MonoBehaviour, IPointerEnterHandler, IPointerExit
             // Rotar ligeramente para más dinamismo
             if (glowObject != null)
             {
-                glowObject.transform.Rotate(0f, 0f, Time.deltaTime * 20f);
+                glowObject.transform.Rotate(0f, 0f, Time.unscaledDeltaTime * 20f);
             }
 
             yield return null;
         }
+
+        Debug.Log("PulseGlow terminado");
     }
 
     private IEnumerator FadeOutGlow()
@@ -195,7 +216,8 @@ public class ButtonRayEffect : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
         while (elapsed < fadeDuration)
         {
-            elapsed += Time.deltaTime;
+            // CRÍTICO: Usar unscaledDeltaTime
+            elapsed += Time.unscaledDeltaTime;
             float t = elapsed / fadeDuration;
             float alpha = Mathf.Lerp(startColor.a, 0f, t);
             glowImage.color = new Color(startColor.r, startColor.g, startColor.b, alpha);

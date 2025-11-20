@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class VidaKaven : MonoBehaviour
 {
@@ -22,18 +23,53 @@ public class VidaKaven : MonoBehaviour
     [SerializeField] private float tiempoInvulnerabilidad = 1f;
     private float tiempoUltimoDano = -10f;
 
-    [Header("Configuración de Muerte")]
-    [SerializeField] private bool reiniciarNivelAlMorir = true;
-    [SerializeField] private float tiempoAntesDeReiniciar = 2f;
+    [Header("Configuración de Game Over")]
+    [SerializeField] private GameObject canvasGameOver;
+    [SerializeField] private float tiempoAntesDeGameOver = 1.5f;
+    [SerializeField] private float duracionTransicion = 1f;
+    [SerializeField] private Color fadeColor = Color.black;
 
     private CharacterController characterController;
     private bool estaMuerto = false;
+    private GameObject fadePanel;
+    private Image fadeImage;
 
     void Start()
     {
         vidaActual = vidaMaxima;
         characterController = GetComponent<CharacterController>();
         ActualizarCorazones();
+
+        // Asegurar que el canvas de Game Over esté desactivado
+        if (canvasGameOver != null)
+        {
+            canvasGameOver.SetActive(false);
+        }
+
+        // Crear panel de fade
+        CreateFadePanel();
+    }
+
+    private void CreateFadePanel()
+    {
+        // Buscar o crear el panel de fade
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas != null)
+        {
+            fadePanel = new GameObject("FadePanelGameOver");
+            fadePanel.transform.SetParent(canvas.transform, false);
+
+            RectTransform rectTransform = fadePanel.AddComponent<RectTransform>();
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.sizeDelta = Vector2.zero;
+            rectTransform.anchoredPosition = Vector2.zero;
+
+            fadeImage = fadePanel.AddComponent<Image>();
+            fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, 0f);
+
+            fadePanel.SetActive(false);
+        }
     }
 
     /// <summary>
@@ -98,17 +134,14 @@ public class VidaKaven : MonoBehaviour
     {
         if (vidaParaEsteCorazon >= 2f)
         {
-            // Corazón lleno (2 puntos o más)
             corazon.sprite = corazonLleno;
         }
         else if (vidaParaEsteCorazon >= 1f)
         {
-            // Medio corazón (1 punto)
             corazon.sprite = corazonMedio;
         }
         else
         {
-            // Corazón vacío (0 puntos)
             corazon.sprite = corazonVacio;
         }
     }
@@ -155,19 +188,107 @@ public class VidaKaven : MonoBehaviour
             ataque.enabled = false;
         }
 
-        // Reiniciar nivel después de un tiempo
-        if (reiniciarNivelAlMorir)
-        {
-            Invoke(nameof(ReiniciarNivel), tiempoAntesDeReiniciar);
-        }
+        // Mostrar pantalla de Game Over después de un tiempo
+        StartCoroutine(MostrarGameOver());
     }
 
     /// <summary>
-    /// Reinicia el nivel actual
+    /// Corrutina para mostrar el Game Over con transición
     /// </summary>
-    void ReiniciarNivel()
+    private IEnumerator MostrarGameOver()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        Debug.Log("=== INICIANDO GAME OVER ===");
+
+        // Esperar un momento antes de la transición
+        yield return new WaitForSeconds(tiempoAntesDeGameOver);
+
+        if (canvasGameOver == null)
+        {
+            Debug.LogError("¡Canvas_Game_Over no está asignado en el Inspector!");
+            yield break;
+        }
+
+        Debug.Log($"Canvas Game Over encontrado: {canvasGameOver.name}");
+
+        // Asegurar que el RectTransform ocupe toda la pantalla
+        RectTransform rectTransform = canvasGameOver.GetComponent<RectTransform>();
+        if (rectTransform != null)
+        {
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.sizeDelta = Vector2.zero;
+            rectTransform.anchoredPosition = Vector2.zero;
+            rectTransform.SetAsLastSibling(); // Poner al frente
+        }
+
+        // Obtener o añadir Canvas Group para controlar visibilidad
+        CanvasGroup canvasGroup = canvasGameOver.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = canvasGameOver.AddComponent<CanvasGroup>();
+        }
+
+        // Activar el canvas pero invisible
+        canvasGameOver.SetActive(true);
+        canvasGroup.alpha = 0;
+        canvasGroup.interactable = false;
+        canvasGroup.blocksRaycasts = false;
+
+        // Fade to black (oscurecer pantalla)
+        if (fadePanel != null && fadeImage != null)
+        {
+            fadePanel.SetActive(true);
+            fadePanel.transform.SetAsLastSibling();
+
+            float elapsed = 0f;
+            while (elapsed < duracionTransicion)
+            {
+                elapsed += Time.deltaTime;
+                float alpha = Mathf.Lerp(0f, 1f, elapsed / duracionTransicion);
+                fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, alpha);
+                yield return null;
+            }
+        }
+
+        // IMPORTANTE: Desbloquear y mostrar el cursor
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        Debug.Log("Cursor desbloqueado y visible");
+
+        // Pausar el juego
+        Time.timeScale = 0f;
+        Debug.Log("Juego pausado - Time.timeScale = 0");
+
+        // Hacer fade in del canvas de Game Over
+        float elapsedFadeIn = 0f;
+        while (elapsedFadeIn < duracionTransicion)
+        {
+            elapsedFadeIn += Time.unscaledDeltaTime;
+            float alpha = Mathf.Lerp(0f, 1f, elapsedFadeIn / duracionTransicion);
+            canvasGroup.alpha = alpha;
+            yield return null;
+        }
+
+        // Asegurar visibilidad completa y habilitar interacción
+        canvasGroup.alpha = 1f;
+        canvasGroup.interactable = true;
+        canvasGroup.blocksRaycasts = true;
+
+        // Desvanecer el panel negro
+        if (fadePanel != null && fadeImage != null)
+        {
+            float elapsedFadeOut = 0f;
+            while (elapsedFadeOut < duracionTransicion * 0.5f)
+            {
+                elapsedFadeOut += Time.unscaledDeltaTime;
+                float alpha = Mathf.Lerp(1f, 0f, elapsedFadeOut / (duracionTransicion * 0.5f));
+                fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, alpha);
+                yield return null;
+            }
+            fadePanel.SetActive(false);
+        }
+
+        Debug.Log("=== GAME OVER COMPLETADO - Botones listos para usar ===");
     }
 
     // Método para verificar si está vivo
@@ -186,5 +307,17 @@ public class VidaKaven : MonoBehaviour
     public float GetVidaMaxima()
     {
         return vidaMaxima;
+    }
+
+    void OnDestroy()
+    {
+        if (fadePanel != null)
+        {
+            Destroy(fadePanel);
+        }
+
+        // Restaurar el cursor al destruir el script
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 }
