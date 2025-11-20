@@ -1,17 +1,17 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 using System.Collections;
 
-// SCRIPT 3: Colocar este script en el JUGADOR
+// SCRIPT COMPLETO: Colocar este script en el JUGADOR
 public class AtaqueBaculo : MonoBehaviour
 {
     [Header("Referencias")]
     [SerializeField] private Animator animator;
-    [SerializeField] private Transform puntoLanzamiento; // Punto desde donde sale el VFX (punta del b·culo)
-    [SerializeField] private GameObject vfxAtaque1; // VFX para ataque 1
-    [SerializeField] private GameObject vfxAtaque2; // VFX para ataque 2
-    [SerializeField] private GameObject vfxAtaque3; // VFX para ataque 3 (AOE)
+    [SerializeField] private Transform puntoLanzamiento;
+    [SerializeField] private GameObject vfxAtaque1;
+    [SerializeField] private GameObject vfxAtaque2;
+    [SerializeField] private GameObject vfxAtaque3;
 
-    [Header("ConfiguraciÛn de Ataques")]
+    [Header("Configuraci√≥n de Ataques")]
     [SerializeField] private string nombreAtaque1 = "ataque1";
     [SerializeField] private string nombreAtaque2 = "ataque2";
     [SerializeField] private string nombreAtaque3 = "ataque3";
@@ -25,21 +25,21 @@ public class AtaqueBaculo : MonoBehaviour
     [SerializeField] private Vector3 escalaProyectil = Vector3.one;
     [SerializeField] private Vector3 rotacionProyectil = Vector3.zero;
 
-    [Header("ConfiguraciÛn Ataque 1 (Proyectil)")]
+    [Header("Configuraci√≥n Ataque 1 (Proyectil)")]
     [SerializeField] private float velocidadAtaque1 = 20f;
-    [SerializeField] private float daÒoAtaque1 = 25f;
+    [SerializeField] private float da√±oAtaque1 = 25f;
 
-    [Header("ConfiguraciÛn Ataque 2 (Proyectil)")]
+    [Header("Configuraci√≥n Ataque 2 (Proyectil)")]
     [SerializeField] private float velocidadAtaque2 = 20f;
-    [SerializeField] private float daÒoAtaque2 = 30f;
+    [SerializeField] private float da√±oAtaque2 = 30f;
 
-    [Header("ConfiguraciÛn Ataque 3 (AOE)")]
-    [SerializeField] private float distanciaAOE = 4f; // Distancia desde el jugador
-    [SerializeField] private Vector3 offsetPosicionAOE = Vector3.zero; // Offset adicional (X, Y, Z)
-    [SerializeField] private Vector3 rotacionAOE = new Vector3(-90, 0, 0); // RotaciÛn del VFX (X, Y, Z)
-    [SerializeField] private float radioAOE = 3f; // Radio del ·rea de efecto
-    [SerializeField] private float daÒoAtaque3 = 50f;
-    [SerializeField] private float duracionVFXAOE = 2f; // Cu·nto dura el efecto visual
+    [Header("Configuraci√≥n Ataque 3 (AOE)")]
+    [SerializeField] private float distanciaAOE = 4f;
+    [SerializeField] private Vector3 offsetPosicionAOE = Vector3.zero;
+    [SerializeField] private Vector3 rotacionAOE = new Vector3(-90, 0, 0);
+    [SerializeField] private float radioAOE = 3f;
+    [SerializeField] private float da√±oAtaque3 = 50f;
+    [SerializeField] private float duracionVFXAOE = 2f;
     [SerializeField] private Vector3 escalaAOE = new Vector3(3, 3, 3);
 
     [Header("General")]
@@ -53,6 +53,13 @@ public class AtaqueBaculo : MonoBehaviour
     private EquipadorBaculo equipador;
     private int ataqueActualIndex = 0;
 
+    // ===== SISTEMA DE BUFFS DE DA√ëO =====
+    [Header("Debug Buff de Da√±o")]
+    [SerializeField] private float multiplicadorDa√±oActual = 1f;   // 1 = da√±o normal
+    [SerializeField] private float da√±oDebugActual = 0f;           // da√±o final aplicado en el √∫ltimo ataque
+
+    private Coroutine buffDa√±oActivo;
+
     void Start()
     {
         if (animator == null)
@@ -63,7 +70,7 @@ public class AtaqueBaculo : MonoBehaviour
 
     void Update()
     {
-        // Verificar que tenga el b·culo equipado
+        // Verificar que tenga el b√°culo equipado
         if (equipador != null && !equipador.TieneBaculoEquipado())
             return;
 
@@ -91,13 +98,13 @@ public class AtaqueBaculo : MonoBehaviour
         puedeAtacar = false;
         ataqueActualIndex = numeroAtaque;
 
-        // Reproducir animaciÛn
+        // Reproducir animaci√≥n
         if (animator != null)
         {
             animator.SetTrigger(nombreAnimacion);
         }
 
-        // Esperar el tiempo de la animaciÛn antes de lanzar el ataque
+        // Esperar el tiempo de la animaci√≥n antes de lanzar el ataque
         Invoke(nameof(LanzarAtaque), tiempoLanzamiento);
 
         // Reiniciar cooldown
@@ -122,22 +129,22 @@ public class AtaqueBaculo : MonoBehaviour
 
     void LanzarVFX()
     {
-        // Seleccionar el VFX y configuraciÛn seg˙n el ataque
+        // Seleccionar el VFX y configuraci√≥n seg√∫n el ataque
         GameObject vfxPrefab = null;
         float velocidad = 0;
-        float daÒo = 0;
+        float da√±o = 0;
 
         switch (ataqueActualIndex)
         {
             case 1:
                 vfxPrefab = vfxAtaque1;
                 velocidad = velocidadAtaque1;
-                daÒo = daÒoAtaque1;
+                da√±o = da√±oAtaque1;
                 break;
             case 2:
                 vfxPrefab = vfxAtaque2;
                 velocidad = velocidadAtaque2;
-                daÒo = daÒoAtaque2;
+                da√±o = da√±oAtaque2;
                 break;
         }
 
@@ -150,21 +157,22 @@ public class AtaqueBaculo : MonoBehaviour
         // Determinar punto de lanzamiento
         Transform puntoOrigen = puntoLanzamiento != null ? puntoLanzamiento : transform;
 
-        // Calcular rotaciÛn final
+        // Calcular rotaci√≥n final
         Quaternion rotacionFinal = puntoOrigen.rotation * Quaternion.Euler(rotacionProyectil);
 
         // Instanciar el VFX
         GameObject vfx = Instantiate(vfxPrefab, puntoOrigen.position, rotacionFinal);
         vfx.transform.localScale = escalaProyectil;
 
-        // AÒadir componente de proyectil
+        // A√±adir componente de proyectil
         ProyectilVFX proyectil = vfx.GetComponent<ProyectilVFX>();
         if (proyectil == null)
         {
             proyectil = vfx.AddComponent<ProyectilVFX>();
         }
 
-        proyectil.Inicializar(velocidad, daÒo, transform.forward);
+        // Aplicar da√±o con multiplicador de buff
+        proyectil.Inicializar(velocidad, ObtenerDa√±oModificado(da√±o), transform.forward);
     }
 
     void LanzarAOE()
@@ -175,21 +183,21 @@ public class AtaqueBaculo : MonoBehaviour
             return;
         }
 
-        // Calcular posiciÛn base (delante del jugador)
+        // Calcular posici√≥n base (delante del jugador)
         Vector3 posicionBase = transform.position + transform.forward * distanciaAOE;
 
-        // Aplicar offset adicional (relativo a la rotaciÛn del jugador)
+        // Aplicar offset adicional (relativo a la rotaci√≥n del jugador)
         Vector3 offsetRotado = transform.TransformDirection(offsetPosicionAOE);
         Vector3 posicionFinal = posicionBase + offsetRotado;
 
-        // Aplicar rotaciÛn configurada
+        // Aplicar rotaci√≥n configurada
         Quaternion rotacionFinal = Quaternion.Euler(rotacionAOE);
 
         // Instanciar el VFX del AOE
         GameObject vfxAOE = Instantiate(vfxAtaque3, posicionFinal, rotacionFinal);
         vfxAOE.transform.localScale = escalaAOE;
 
-        Debug.Log($"[AOE] Instanciado en: {posicionFinal} | RotaciÛn: {rotacionAOE} | Escala: {escalaAOE}");
+        Debug.Log($"[AOE] Instanciado en: {posicionFinal} | Rotaci√≥n: {rotacionAOE} | Escala: {escalaAOE}");
 
         // Intentar reproducir Particle Systems
         ParticleSystem[] particulas = vfxAOE.GetComponentsInChildren<ParticleSystem>();
@@ -215,14 +223,15 @@ public class AtaqueBaculo : MonoBehaviour
 #endif
         }
 
-        // AÒadir componente AOE
+        // A√±adir componente AOE
         AtaqueAOE aoe = vfxAOE.GetComponent<AtaqueAOE>();
         if (aoe == null)
         {
             aoe = vfxAOE.AddComponent<AtaqueAOE>();
         }
 
-        aoe.Inicializar(radioAOE, daÒoAtaque3, duracionVFXAOE);
+        // Aplicar da√±o con multiplicador de buff
+        aoe.Inicializar(radioAOE, ObtenerDa√±oModificado(da√±oAtaque3), duracionVFXAOE);
     }
 
     void ReiniciarCooldown()
@@ -230,26 +239,96 @@ public class AtaqueBaculo : MonoBehaviour
         puedeAtacar = true;
     }
 
-    // Visualizar el ·rea de AOE en el editor
+    // ===== SISTEMA DE BUFFS DE DA√ëO =====
+
+    /// <summary>
+    /// M√©todo p√∫blico para aplicar buff de da√±o desde power-ups externos
+    /// </summary>
+    public void AplicarBuffDa√±o(float multiplicador, float duracion)
+    {
+        // Si ya hay un buff activo, detenerlo
+        if (buffDa√±oActivo != null)
+        {
+            StopCoroutine(buffDa√±oActivo);
+        }
+
+        // Iniciar nuevo buff
+        buffDa√±oActivo = StartCoroutine(BuffDa√±oCoroutine(multiplicador, duracion));
+    }
+
+    private IEnumerator BuffDa√±oCoroutine(float multiplicador, float duracion)
+    {
+        multiplicadorDa√±oActual = multiplicador;
+        float porcentaje = (multiplicador - 1) * 100;
+        Debug.Log($"[Ataque] üí™ Buff de da√±o activado: x{multiplicador} (+{porcentaje:F0}% m√°s da√±o) por {duracion}s");
+
+        yield return new WaitForSeconds(duracion);
+
+        multiplicadorDa√±oActual = 1f;
+        buffDa√±oActivo = null;
+        Debug.Log("[Ataque] ‚è∞ Buff de da√±o terminado. Da√±o normal restaurado.");
+    }
+
+    /// <summary>
+    /// Obtiene el da√±o modificado aplicando el multiplicador actual
+    /// </summary>
+    public float ObtenerDa√±oModificado(float da√±oBase)
+    {
+        float da√±oFinal = da√±oBase * multiplicadorDa√±oActual;
+
+        if (multiplicadorDa√±oActual > 1f)
+        {
+            Debug.Log($"[Ataque] üî• Da√±o buffeado: {da√±oBase} ‚Üí {da√±oFinal} (x{multiplicadorDa√±oActual})");
+        }
+
+        // Guardar en debug para verlo en el Inspector
+        da√±oDebugActual = da√±oFinal;
+
+        return da√±oFinal;
+    }
+
+    /// <summary>
+    /// Obtiene el multiplicador actual (√∫til para mostrar en UI)
+    /// </summary>
+    public float ObtenerMultiplicadorActual()
+    {
+        return multiplicadorDa√±oActual;
+    }
+
+    /// <summary>
+    /// Verifica si hay un buff activo
+    /// </summary>
+    public bool TieneBuffActivo()
+    {
+        return multiplicadorDa√±oActual > 1f;
+    }
+
+    // Visualizar el √°rea de AOE en el editor (SOLO en Scene View)
     void OnDrawGizmosSelected()
     {
-        // Calcular posiciÛn del AOE para visualizaciÛn
+        // No dibujar si estamos en Play mode
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            return;
+#endif
+
+        // Calcular posici√≥n del AOE para visualizaci√≥n
         Vector3 posicionBase = transform.position + transform.forward * distanciaAOE;
         Vector3 offsetRotado = transform.TransformDirection(offsetPosicionAOE);
         Vector3 posicionFinal = posicionBase + offsetRotado;
 
-        // Dibujar el ·rea de AOE
+        // Dibujar el √°rea de AOE
         Gizmos.color = new Color(1, 0, 0, 0.3f);
         Gizmos.DrawSphere(posicionFinal, radioAOE);
 
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(posicionFinal, radioAOE);
 
-        // LÌnea desde el jugador hasta el centro del AOE
+        // L√≠nea desde el jugador hasta el centro del AOE
         Gizmos.color = Color.yellow;
         Gizmos.DrawLine(transform.position, posicionFinal);
 
-        // Ejes de rotaciÛn
+        // Ejes de rotaci√≥n
         Matrix4x4 rotationMatrix = Matrix4x4.TRS(posicionFinal, Quaternion.Euler(rotacionAOE), Vector3.one);
         Gizmos.matrix = rotationMatrix;
 
@@ -270,7 +349,7 @@ public class AtaqueBaculo : MonoBehaviour
 public class ProyectilVFX : MonoBehaviour
 {
     private float velocidad;
-    private float daÒo;
+    private float da√±o;
     private Vector3 direccion;
 
     [SerializeField] private float tiempoVida = 5f;
@@ -279,10 +358,10 @@ public class ProyectilVFX : MonoBehaviour
     public void Inicializar(float vel, float dmg, Vector3 dir)
     {
         velocidad = vel;
-        daÒo = dmg;
+        da√±o = dmg;
         direccion = dir.normalized;
 
-        // AÒadir collider si no existe
+        // A√±adir collider si no existe
         SphereCollider collider = GetComponent<SphereCollider>();
         if (collider == null)
         {
@@ -291,7 +370,7 @@ public class ProyectilVFX : MonoBehaviour
         collider.isTrigger = true;
         collider.radius = radioCollider;
 
-        // AÒadir Rigidbody si no existe
+        // A√±adir Rigidbody si no existe
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb == null)
         {
@@ -316,7 +395,7 @@ public class ProyectilVFX : MonoBehaviour
         VidaEnemigo enemigo = other.GetComponent<VidaEnemigo>();
         if (enemigo != null)
         {
-            enemigo.RecibirDaÒo(daÒo);
+            enemigo.RecibirDa√±o(da√±o);
         }
 
         Destroy(gameObject);
@@ -327,32 +406,32 @@ public class ProyectilVFX : MonoBehaviour
 public class AtaqueAOE : MonoBehaviour
 {
     private float radio;
-    private float daÒo;
-    private bool daÒoAplicado = false;
+    private float da√±o;
+    private bool da√±oAplicado = false;
 
     public void Inicializar(float rad, float dmg, float duracion)
     {
         radio = rad;
-        daÒo = dmg;
+        da√±o = dmg;
 
-        // Aplicar daÒo inmediatamente
-        Invoke(nameof(AplicarDaÒo), 0.1f);
+        // Aplicar da√±o inmediatamente
+        Invoke(nameof(AplicarDa√±o), 0.1f);
 
-        // Destruir despuÈs de la duraciÛn
+        // Destruir despu√©s de la duraci√≥n
         Destroy(gameObject, duracion);
     }
 
-    void AplicarDaÒo()
+    void AplicarDa√±o()
     {
-        if (daÒoAplicado)
+        if (da√±oAplicado)
             return;
 
-        daÒoAplicado = true;
+        da√±oAplicado = true;
 
         // Detectar todos los colliders en el radio
         Collider[] collidersEnArea = Physics.OverlapSphere(transform.position, radio);
 
-        Debug.Log($"[AOE] Detectados {collidersEnArea.Length} objetos en el ·rea");
+        Debug.Log($"[AOE] Detectados {collidersEnArea.Length} objetos en el √°rea");
 
         int enemigosGolpeados = 0;
         foreach (Collider col in collidersEnArea)
@@ -365,18 +444,23 @@ public class AtaqueAOE : MonoBehaviour
             VidaEnemigo enemigo = col.GetComponent<VidaEnemigo>();
             if (enemigo != null)
             {
-                enemigo.RecibirDaÒo(daÒo);
+                enemigo.RecibirDa√±o(da√±o);
                 enemigosGolpeados++;
-                Debug.Log($"[AOE] GolpeÛ a {col.gameObject.name} con {daÒo} de daÒo");
+                Debug.Log($"[AOE] ‚ö° Golpe√≥ a {col.gameObject.name} con {da√±o} de da√±o");
             }
         }
 
         Debug.Log($"[AOE] Total enemigos golpeados: {enemigosGolpeados}");
     }
 
-    // Visualizar el ·rea de efecto en Scene View
+    // Visualizar el √°rea de efecto en Scene View (SOLO en editor)
     void OnDrawGizmos()
     {
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            return;
+#endif
+
         Gizmos.color = new Color(1, 0.5f, 0, 0.3f);
         Gizmos.DrawSphere(transform.position, radio);
 
@@ -396,10 +480,10 @@ public class VidaEnemigo : MonoBehaviour
         vidaActual = vidaMaxima;
     }
 
-    public void RecibirDaÒo(float cantidad)
+    public void RecibirDa√±o(float cantidad)
     {
         vidaActual -= cantidad;
-        Debug.Log(gameObject.name + " recibiÛ " + cantidad + " de daÒo. Vida restante: " + vidaActual);
+        Debug.Log($"üí• {gameObject.name} recibi√≥ {cantidad} de da√±o. Vida restante: {vidaActual}");
 
         if (vidaActual <= 0)
         {
@@ -409,7 +493,7 @@ public class VidaEnemigo : MonoBehaviour
 
     void Morir()
     {
-        Debug.Log(gameObject.name + " ha muerto");
+        Debug.Log($"üíÄ {gameObject.name} ha muerto");
         Destroy(gameObject);
     }
 }

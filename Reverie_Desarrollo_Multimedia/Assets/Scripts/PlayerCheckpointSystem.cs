@@ -98,15 +98,18 @@ public class PlayerCheckpointSystem : MonoBehaviour
             Respawnear();
         }
     }
-    // Para visualizar el límite de caída en el editor
     void OnDrawGizmos()
     {
+        if (Application.isPlaying)
+            return;
+
         Gizmos.color = Color.red;
         Gizmos.DrawLine(
             new Vector3(-1000, limiteY, 0),
             new Vector3(1000, limiteY, 0)
         );
-        if (checkpointActivo && Application.isPlaying)
+
+        if (checkpointActivo)
         {
             Gizmos.color = Color.green;
             Gizmos.DrawWireSphere(ultimoCheckpoint, 0.5f);

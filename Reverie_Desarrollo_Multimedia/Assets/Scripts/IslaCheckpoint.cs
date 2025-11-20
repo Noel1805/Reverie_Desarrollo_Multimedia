@@ -45,9 +45,11 @@ public class IslaCheckpoint : MonoBehaviour
     // Visualización en el editor
     void OnDrawGizmos()
     {
+        if (Application.isPlaying)
+            return;   // ⛔ NO mostrar nada en Play Mode
+
         Gizmos.color = checkpointGuardado ? Color.green : colorGizmo;
 
-        // Dibujar el collider aproximado
         Collider col = GetComponent<Collider>();
         if (col != null)
         {

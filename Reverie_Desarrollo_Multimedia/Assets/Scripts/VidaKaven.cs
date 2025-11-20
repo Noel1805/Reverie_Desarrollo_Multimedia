@@ -1,11 +1,11 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class VidaKaven : MonoBehaviour
 {
-    [Header("ConfiguraciÛn de Vida")]
+    [Header("Configuraci√≥n de Vida")]
     [SerializeField] private float vidaMaxima = 6f; // 3 corazones x 2 puntos cada uno
     private float vidaActual;
 
@@ -19,15 +19,21 @@ public class VidaKaven : MonoBehaviour
     [SerializeField] private Sprite corazonMedio;
     [SerializeField] private Sprite corazonVacio;
 
-    [Header("ConfiguraciÛn de DaÒo")]
+    [Header("Configuraci√≥n de Da√±o")]
     [SerializeField] private float tiempoInvulnerabilidad = 1f;
     private float tiempoUltimoDano = -10f;
 
-    [Header("ConfiguraciÛn de Game Over")]
+    [Header("Configuraci√≥n de Game Over")]
     [SerializeField] private GameObject canvasGameOver;
     [SerializeField] private float tiempoAntesDeGameOver = 1.5f;
     [SerializeField] private float duracionTransicion = 1f;
     [SerializeField] private Color fadeColor = Color.black;
+
+    // <<< NUEVO: estados especiales / power-ups
+    [Header("Power-Ups / Estados especiales")]
+    [SerializeField] private bool invulnerablePorPowerUp = false;
+    [SerializeField] private float tiempoRestanteInvulnerabilidad = 0f;
+    private Coroutine invulnerabilidadPowerUpActiva;
 
     private CharacterController characterController;
     private bool estaMuerto = false;
@@ -40,7 +46,7 @@ public class VidaKaven : MonoBehaviour
         characterController = GetComponent<CharacterController>();
         ActualizarCorazones();
 
-        // Asegurar que el canvas de Game Over estÈ desactivado
+        // Asegurar que el canvas de Game Over est√© desactivado
         if (canvasGameOver != null)
         {
             canvasGameOver.SetActive(false);
@@ -73,16 +79,23 @@ public class VidaKaven : MonoBehaviour
     }
 
     /// <summary>
-    /// MÈtodo p˙blico para que otros scripts hagan daÒo a Kaven
+    /// M√©todo p√∫blico para que otros scripts hagan da√±o a Kaven
     /// </summary>
     public void RecibirDano(float cantidad)
     {
         if (estaMuerto) return;
 
-        // Verificar invulnerabilidad
+        // <<< NUEVO: invulnerabilidad total por power-up
+        if (invulnerablePorPowerUp)
+        {
+            Debug.Log("Kaven es inmune al da√±o por power-up (pera). Da√±o ignorado.");
+            return;
+        }
+
+        // Verificar invulnerabilidad normal por golpe reciente
         if (Time.time - tiempoUltimoDano < tiempoInvulnerabilidad)
         {
-            Debug.Log("Kaven est· invulnerable");
+            Debug.Log("Kaven est√° invulnerable por cooldown de da√±o");
             return;
         }
 
@@ -90,7 +103,7 @@ public class VidaKaven : MonoBehaviour
         vidaActual = Mathf.Clamp(vidaActual, 0, vidaMaxima);
         tiempoUltimoDano = Time.time;
 
-        Debug.Log($"Kaven recibiÛ {cantidad} de daÒo. Vida restante: {vidaActual}/{vidaMaxima}");
+        Debug.Log($"Kaven recibi√≥ {cantidad} de da√±o. Vida restante: {vidaActual}/{vidaMaxima}");
 
         ActualizarCorazones();
 
@@ -101,34 +114,34 @@ public class VidaKaven : MonoBehaviour
     }
 
     /// <summary>
-    /// Actualiza la visualizaciÛn de los 3 corazones individualmente
+    /// Actualiza la visualizaci√≥n de los 3 corazones individualmente
     /// </summary>
     void ActualizarCorazones()
     {
         if (corazon1 == null || corazon2 == null || corazon3 == null)
         {
-            Debug.LogError("°Faltan referencias de corazones en el Inspector!");
+            Debug.LogError("¬°Faltan referencias de corazones en el Inspector!");
             return;
         }
 
         if (corazonLleno == null || corazonMedio == null || corazonVacio == null)
         {
-            Debug.LogError("°Faltan sprites de corazones en el Inspector!");
+            Debug.LogError("¬°Faltan sprites de corazones en el Inspector!");
             return;
         }
 
-        // Actualizar CorazÛn 1 (primeros 2 puntos de vida)
+        // Actualizar Coraz√≥n 1 (primeros 2 puntos de vida)
         ActualizarCorazonIndividual(corazon1, vidaActual);
 
-        // Actualizar CorazÛn 2 (siguientes 2 puntos de vida)
+        // Actualizar Coraz√≥n 2 (siguientes 2 puntos de vida)
         ActualizarCorazonIndividual(corazon2, vidaActual - 2f);
 
-        // Actualizar CorazÛn 3 (˙ltimos 2 puntos de vida)
+        // Actualizar Coraz√≥n 3 (√∫ltimos 2 puntos de vida)
         ActualizarCorazonIndividual(corazon3, vidaActual - 4f);
     }
 
     /// <summary>
-    /// Actualiza un corazÛn individual seg˙n la vida que le corresponde
+    /// Actualiza un coraz√≥n individual seg√∫n la vida que le corresponde
     /// </summary>
     void ActualizarCorazonIndividual(Image corazon, float vidaParaEsteCorazon)
     {
@@ -160,6 +173,46 @@ public class VidaKaven : MonoBehaviour
     }
 
     /// <summary>
+    /// <<< NUEVO: Activar invulnerabilidad total por un tiempo (pera)
+    /// </summary>
+    public void ActivarInvulnerabilidadTemporal(float duracion)
+    {
+        if (estaMuerto) return;
+
+        if (!gameObject.activeInHierarchy)
+            return;
+
+        // Si ya hay una invulnerabilidad activa, la reiniciamos
+        if (invulnerabilidadPowerUpActiva != null)
+        {
+            StopCoroutine(invulnerabilidadPowerUpActiva);
+        }
+
+        invulnerabilidadPowerUpActiva = StartCoroutine(InvulnerabilidadTemporalCoroutine(duracion));
+    }
+
+    /// <summary>
+    /// <<< NUEVO: Corrutina que maneja el estado de invulnerabilidad por power-up
+    /// </summary>
+    private IEnumerator InvulnerabilidadTemporalCoroutine(float duracion)
+    {
+        invulnerablePorPowerUp = true;
+        tiempoRestanteInvulnerabilidad = duracion;
+        Debug.Log($"[VidaKaven] üõ° Invulnerabilidad ACTIVADA por {duracion} segundos (PowerUp Pera)");
+
+        while (tiempoRestanteInvulnerabilidad > 0f)
+        {
+            tiempoRestanteInvulnerabilidad -= Time.deltaTime;
+            yield return null;
+        }
+
+        invulnerablePorPowerUp = false;
+        tiempoRestanteInvulnerabilidad = 0f;
+        invulnerabilidadPowerUpActiva = null;
+        Debug.Log("[VidaKaven] ‚è± Invulnerabilidad de power-up FINALIZADA");
+    }
+
+    /// <summary>
     /// Maneja la muerte de Kaven
     /// </summary>
     void Morir()
@@ -167,7 +220,7 @@ public class VidaKaven : MonoBehaviour
         if (estaMuerto) return;
 
         estaMuerto = true;
-        Debug.Log("°KAVEN HA MUERTO!");
+        Debug.Log("¬°KAVEN HA MUERTO!");
 
         // Desactivar controles
         if (characterController != null)
@@ -188,23 +241,23 @@ public class VidaKaven : MonoBehaviour
             ataque.enabled = false;
         }
 
-        // Mostrar pantalla de Game Over despuÈs de un tiempo
+        // Mostrar pantalla de Game Over despu√©s de un tiempo
         StartCoroutine(MostrarGameOver());
     }
 
     /// <summary>
-    /// Corrutina para mostrar el Game Over con transiciÛn
+    /// Corrutina para mostrar el Game Over con transici√≥n
     /// </summary>
     private IEnumerator MostrarGameOver()
     {
         Debug.Log("=== INICIANDO GAME OVER ===");
 
-        // Esperar un momento antes de la transiciÛn
+        // Esperar un momento antes de la transici√≥n
         yield return new WaitForSeconds(tiempoAntesDeGameOver);
 
         if (canvasGameOver == null)
         {
-            Debug.LogError("°Canvas_Game_Over no est· asignado en el Inspector!");
+            Debug.LogError("¬°Canvas_Game_Over no est√° asignado en el Inspector!");
             yield break;
         }
 
@@ -221,7 +274,7 @@ public class VidaKaven : MonoBehaviour
             rectTransform.SetAsLastSibling(); // Poner al frente
         }
 
-        // Obtener o aÒadir Canvas Group para controlar visibilidad
+        // Obtener o a√±adir Canvas Group para controlar visibilidad
         CanvasGroup canvasGroup = canvasGameOver.GetComponent<CanvasGroup>();
         if (canvasGroup == null)
         {
@@ -269,7 +322,7 @@ public class VidaKaven : MonoBehaviour
             yield return null;
         }
 
-        // Asegurar visibilidad completa y habilitar interacciÛn
+        // Asegurar visibilidad completa y habilitar interacci√≥n
         canvasGroup.alpha = 1f;
         canvasGroup.interactable = true;
         canvasGroup.blocksRaycasts = true;
@@ -291,19 +344,19 @@ public class VidaKaven : MonoBehaviour
         Debug.Log("=== GAME OVER COMPLETADO - Botones listos para usar ===");
     }
 
-    // MÈtodo para verificar si est· vivo
+    // M√©todo para verificar si est√° vivo
     public bool EstaVivo()
     {
         return !estaMuerto && vidaActual > 0;
     }
 
-    // MÈtodo para obtener vida actual
+    // M√©todo para obtener vida actual
     public float GetVidaActual()
     {
         return vidaActual;
     }
 
-    // MÈtodo para obtener vida m·xima
+    // M√©todo para obtener vida m√°xima
     public float GetVidaMaxima()
     {
         return vidaMaxima;
