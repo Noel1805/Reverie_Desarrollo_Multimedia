@@ -20,6 +20,14 @@ public class New_CharacterController : MonoBehaviour
     public Transform cameraTransform;
     public Animator animator;
 
+    [Header("Sistema de Pollo")]
+    [Tooltip("Punto donde se equipará el pollo (en la cabeza)")]
+    public Transform puntoEquipoPollo;
+    [Tooltip("Multiplicador de salto cuando tiene el pollo")]
+    public float multiplicadorSaltoPollo = 2.5f;
+    [Tooltip("Multiplicador de gravedad cuando tiene el pollo (menor = cae más lento)")]
+    public float multiplicadorGravedadPollo = 0.4f;
+
     private CharacterController characterController;
     private Vector3 Velocity;
     private float currentSpeed;
@@ -30,6 +38,12 @@ public class New_CharacterController : MonoBehaviour
     private Transform verticalPlatform;
     private Vector3 lastPlatformPosition;
     private bool wasOnVerticalPlatform;
+
+    // Sistema del pollo
+    private GameObject polloEquipado;
+    private bool tienePollo = false;
+    private float jumpHeightOriginal;
+    private float gravityOriginal;
 
     public bool IsMoving { get; private set; }
     public Vector2 CurrentInput { get; private set; }
@@ -46,6 +60,19 @@ public class New_CharacterController : MonoBehaviour
         // Si no se asigna animator, intenta obtenerlo del objeto
         if (animator == null)
             animator = GetComponent<Animator>();
+
+        // Crear punto de equipo del pollo si no existe
+        if (puntoEquipoPollo == null)
+        {
+            GameObject puntoTemp = new GameObject("PuntoEquipoPollo");
+            puntoTemp.transform.SetParent(transform);
+            puntoTemp.transform.localPosition = new Vector3(0, 2f, 0); // Ajusta según tu personaje
+            puntoEquipoPollo = puntoTemp.transform;
+        }
+
+        // Guardar valores originales
+        jumpHeightOriginal = jumpHeight;
+        gravityOriginal = gravity;
     }
 
     void Update()
@@ -159,7 +186,7 @@ public class New_CharacterController : MonoBehaviour
             currentSpeed = 0f;
         }
 
-        // Salto
+        // Salto (usa los valores actuales que pueden estar modificados por el pollo)
         if (Input.GetButtonDown("Jump") && IsGrounded)
         {
             Velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
@@ -168,7 +195,7 @@ public class New_CharacterController : MonoBehaviour
                 animator.SetBool("IsJumping", true);
         }
 
-        // Aplicar gravedad (reducida si estamos en plataforma vertical)
+        // Aplicar gravedad (reducida si estamos en plataforma vertical o tenemos pollo)
         float gravityMultiplier = wasOnVerticalPlatform ? 0.3f : 1f;
         Velocity.y += gravity * gravityMultiplier * Time.deltaTime;
 
@@ -202,6 +229,64 @@ public class New_CharacterController : MonoBehaviour
         animator.SetFloat("VerticalSpeed", Velocity.y);
     }
 
+    // ==================== MÉTODOS DEL SISTEMA DEL POLLO ====================
+
+    public void EquiparPollo(GameObject pollo)
+    {
+        if (tienePollo) return;
+
+        tienePollo = true;
+        polloEquipado = pollo;
+
+        // Limpiar componentes físicos del pollo
+        Rigidbody polloRb = pollo.GetComponent<Rigidbody>();
+        if (polloRb != null)
+            Destroy(polloRb);
+
+        Collider polloCollider = pollo.GetComponent<Collider>();
+        if (polloCollider != null)
+            polloCollider.enabled = false;
+
+        // Desactivar script de recogida
+        PolloRecogible polloScript = pollo.GetComponent<PolloRecogible>();
+        if (polloScript != null)
+            polloScript.enabled = false;
+
+        // Posicionar en la cabeza
+        pollo.transform.SetParent(puntoEquipoPollo);
+        pollo.transform.localPosition = new Vector3(0, -0.2f, 0);
+        pollo.transform.localRotation = Quaternion.Euler(0, 90, 0);
+        pollo.transform.localScale = Vector3.one * 2f;
+
+        // Modificar valores de salto y gravedad
+        jumpHeight = jumpHeightOriginal * multiplicadorSaltoPollo;
+        gravity = gravityOriginal * multiplicadorGravedadPollo;
+
+        Debug.Log("¡Pollo equipado! Salto mejorado y gravedad reducida.");
+    }
+
+    public void DesequiparPollo()
+    {
+        if (!tienePollo || polloEquipado == null) return;
+
+        tienePollo = false;
+
+        // Restaurar valores originales
+        jumpHeight = jumpHeightOriginal;
+        gravity = gravityOriginal;
+
+        // Destruir el pollo
+        Destroy(polloEquipado);
+        polloEquipado = null;
+
+        Debug.Log("Pollo desequipado. Valores normales restaurados.");
+    }
+
+    public bool TienePollo()
+    {
+        return tienePollo;
+    }
+
     // Método público para aplicar fuerzas externas
     public void AddExternalVelocity(Vector3 velocity)
     {
@@ -217,5 +302,14 @@ public class New_CharacterController : MonoBehaviour
         Gizmos.color = wasOnVerticalPlatform ? Color.green : Color.yellow;
         float rayDistance = characterController.height / 2f + 0.2f;
         Gizmos.DrawLine(transform.position, transform.position + Vector3.down * rayDistance);
+
+        // COMENTADO: Visualizar punto del pollo
+        /*
+        if (puntoEquipoPollo != null)
+        {
+            Gizmos.color = tienePollo ? Color.cyan : Color.gray;
+            Gizmos.DrawWireSphere(puntoEquipoPollo.position, 0.2f);
+        }
+        */
     }
 }
