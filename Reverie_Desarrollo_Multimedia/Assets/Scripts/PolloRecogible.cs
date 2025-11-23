@@ -7,18 +7,26 @@ public class PolloRecogible : MonoBehaviour
     [SerializeField] private KeyCode teclaRecoger = KeyCode.E;
 
     [Header("UI (Opcional)")]
-    [SerializeField] private GameObject indicadorUI; // Para mostrar "Presiona E"
+    [SerializeField] private GameObject indicadorUI;
 
     private Transform jugador;
     private bool enRango = false;
 
+    // Guardar posición y rotación inicial
+    private Vector3 posicionInicial;
+    private Quaternion rotacionInicial;
+
+    void Awake()
+    {
+        // Guardar posición al inicio del juego
+        posicionInicial = transform.position;
+        rotacionInicial = transform.rotation;
+        Debug.Log($"PolloRecogible: Posición inicial guardada en {posicionInicial}");
+    }
+
     void Start()
     {
-        GameObject jugadorObj = GameObject.FindGameObjectWithTag("Player");
-        if (jugadorObj != null)
-        {
-            jugador = jugadorObj.transform;
-        }
+        BuscarJugador();
 
         if (indicadorUI != null)
         {
@@ -26,20 +34,50 @@ public class PolloRecogible : MonoBehaviour
         }
     }
 
+    void OnEnable()
+    {
+        BuscarJugador();
+        enRango = false;
+
+        if (indicadorUI != null)
+        {
+            indicadorUI.SetActive(false);
+        }
+    }
+
+    void BuscarJugador()
+    {
+        if (jugador == null)
+        {
+            GameObject jugadorObj = GameObject.FindGameObjectWithTag("Player");
+            if (jugadorObj != null)
+            {
+                jugador = jugadorObj.transform;
+                Debug.Log("PolloRecogible: Jugador encontrado");
+            }
+            else
+            {
+                Debug.LogWarning("PolloRecogible: No se encontró un objeto con tag 'Player'");
+            }
+        }
+    }
+
     void Update()
     {
-        if (jugador == null) return;
+        if (jugador == null)
+        {
+            BuscarJugador();
+            return;
+        }
 
         float distancia = Vector3.Distance(transform.position, jugador.position);
         enRango = distancia <= distanciaRecogida;
 
-        // Mostrar/ocultar indicador
         if (indicadorUI != null)
         {
             indicadorUI.SetActive(enRango);
         }
 
-        // Detectar input para recoger
         if (enRango && Input.GetKeyDown(teclaRecoger))
         {
             RecogerPollo();
@@ -48,12 +86,19 @@ public class PolloRecogible : MonoBehaviour
 
     void RecogerPollo()
     {
-        // Buscar el componente correcto del jugador
         New_CharacterController jugadorScript = jugador.GetComponent<New_CharacterController>();
 
         if (jugadorScript != null)
         {
-            jugadorScript.EquiparPollo(gameObject);
+            if (!jugadorScript.TienePollo())
+            {
+                // Pasar las posiciones iniciales al equipar
+                jugadorScript.EquiparPollo(gameObject, posicionInicial, rotacionInicial);
+            }
+            else
+            {
+                Debug.Log("El jugador ya tiene un pollo equipado");
+            }
         }
         else
         {
@@ -65,5 +110,12 @@ public class PolloRecogible : MonoBehaviour
     {
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, distanciaRecogida);
+
+        if (Application.isPlaying)
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(posicionInicial, 0.3f);
+            Gizmos.DrawLine(transform.position, posicionInicial);
+        }
     }
 }

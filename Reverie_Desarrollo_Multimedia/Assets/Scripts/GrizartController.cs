@@ -245,11 +245,13 @@ public class GrizartController : MonoBehaviour
         if (estaMuerto) return;
         estaMuerto = true;
 
-        Debug.Log("[Grizart] 💀 Enemigo ha muerto");
+        Debug.Log("[Grizart] 💀 Enemigo ha muerto - Iniciando animación");
 
         // Limpia animaciones que puedan seguir molestando
         animator.SetBool("IsWalking", false);
         animator.ResetTrigger("Attack");
+
+        // ACTIVAR ANIMACIÓN DE MUERTE
         animator.SetBool("IsDead", true);
 
         if (characterController != null)
@@ -258,21 +260,34 @@ public class GrizartController : MonoBehaviour
         // Desactivamos la IA
         this.enabled = false;
 
-        // Iniciar Fade Out
-        StartCoroutine(FadeOutAndDestroy());
+        // ESPERAR a que la animación termine ANTES de hacer fade out
+        StartCoroutine(EsperarYDestruir());
     }
 
+    private IEnumerator EsperarYDestruir()
+    {
+        Debug.Log("[Grizart] ⏱️ Esperando a que termine la animación de muerte...");
+
+        // ESPERAR el tiempo de la animación de muerte
+        yield return new WaitForSeconds(tiempoAntesDeDestruir);
+
+        Debug.Log("[Grizart] ✅ Animación de muerte completada, iniciando fade out");
+
+        // AHORA sí, iniciar el fade out
+        yield return StartCoroutine(FadeOutAndDestroy());
+    }
 
     private IEnumerator FadeOutAndDestroy()
     {
-        // Tomamos TODOS los renderers del enemigo (incluye SkinnedMeshRenderer)
+        Debug.Log("[Grizart] 🌫️ Iniciando fade out");
+
+        // Tomamos TODOS los renderers del enemigo
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
 
         // Cacheamos los materiales instanciados
         Material[][] materialesPorRenderer = new Material[renderers.Length][];
         for (int i = 0; i < renderers.Length; i++)
         {
-            // Clonamos los materiales para no afectar a otros enemigos
             materialesPorRenderer[i] = renderers[i].materials;
         }
 
@@ -284,9 +299,6 @@ public class GrizartController : MonoBehaviour
             tiempo += Time.deltaTime;
             float t = tiempo / duracion;
             float alpha = Mathf.Lerp(1f, 0f, t);
-
-            // Debug opcional para ver el alpha en consola
-            // Debug.Log("Alpha enemigo: " + alpha);
 
             for (int i = 0; i < materialesPorRenderer.Length; i++)
             {
@@ -313,6 +325,7 @@ public class GrizartController : MonoBehaviour
             yield return null;
         }
 
+        Debug.Log("[Grizart] 🗑️ Destruyendo enemigo");
         Destroy(gameObject);
     }
 

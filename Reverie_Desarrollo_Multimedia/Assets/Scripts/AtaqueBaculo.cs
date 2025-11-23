@@ -60,12 +60,17 @@ public class AtaqueBaculo : MonoBehaviour
 
     private Coroutine buffDañoActivo;
 
+    // ===== NUEVO: CONTROL DE MOVIMIENTO =====
+    private New_CharacterController movimiento;
+    private bool movimientoDesactivadoPorAtaque = false;
+
     void Start()
     {
         if (animator == null)
             animator = GetComponent<Animator>();
 
         equipador = GetComponent<EquipadorBaculo>();
+        movimiento = GetComponent<New_CharacterController>();
     }
 
     void Update()
@@ -74,8 +79,19 @@ public class AtaqueBaculo : MonoBehaviour
         if (equipador != null && !equipador.TieneBaculoEquipado())
             return;
 
+        // Si está en cooldown o ya está atacando, no hacer nada
         if (!puedeAtacar || atacando)
             return;
+
+        // ===== SOLO PERMITIR ATAQUE SI EL JUGADOR ESTÁ QUIETO =====
+        // Usamos el input básico (Horizontal/Vertical). Si usas otros ejes, cámbialos aquí.
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+
+        // Si hay input de movimiento, no permitir iniciar ataque
+        if (Mathf.Abs(h) > 0.01f || Mathf.Abs(v) > 0.01f)
+            return;
+        // =============================================
 
         // Detectar teclas de ataque
         if (Input.GetKeyDown(teclaAtaque1))
@@ -97,6 +113,14 @@ public class AtaqueBaculo : MonoBehaviour
         atacando = true;
         puedeAtacar = false;
         ataqueActualIndex = numeroAtaque;
+
+        // ===== BLOQUEAR MOVIMIENTO MIENTRAS ATACA =====
+        if (movimiento != null && movimiento.enabled)
+        {
+            movimiento.enabled = false;
+            movimientoDesactivadoPorAtaque = true;
+        }
+        // ==============================================
 
         // Reproducir animación
         if (animator != null)
@@ -125,6 +149,14 @@ public class AtaqueBaculo : MonoBehaviour
         }
 
         atacando = false;
+
+        // ===== VOLVER A PERMITIR MOVIMIENTO DESPUÉS DEL ATAQUE =====
+        if (movimiento != null && movimientoDesactivadoPorAtaque)
+        {
+            movimiento.enabled = true;
+            movimientoDesactivadoPorAtaque = false;
+        }
+        // ============================================================
     }
 
     void LanzarVFX()
@@ -210,7 +242,6 @@ public class AtaqueBaculo : MonoBehaviour
         }
         else
         {
-            // Si no hay Particle Systems, buscar Visual Effect Graph
 #if UNITY_2019_3_OR_NEWER
             UnityEngine.VFX.VisualEffect[] vfxGraphs = vfxAOE.GetComponentsInChildren<UnityEngine.VFX.VisualEffect>();
             if (vfxGraphs.Length > 0)
@@ -306,29 +337,24 @@ public class AtaqueBaculo : MonoBehaviour
     // Visualizar el área de AOE en el editor (SOLO en Scene View)
     void OnDrawGizmosSelected()
     {
-        // No dibujar si estamos en Play mode
 #if UNITY_EDITOR
         if (Application.isPlaying)
             return;
 #endif
 
-        // Calcular posición del AOE para visualización
         Vector3 posicionBase = transform.position + transform.forward * distanciaAOE;
         Vector3 offsetRotado = transform.TransformDirection(offsetPosicionAOE);
         Vector3 posicionFinal = posicionBase + offsetRotado;
 
-        // Dibujar el área de AOE
         Gizmos.color = new Color(1, 0, 0, 0.3f);
         Gizmos.DrawSphere(posicionFinal, radioAOE);
 
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(posicionFinal, radioAOE);
 
-        // Línea desde el jugador hasta el centro del AOE
         Gizmos.color = Color.yellow;
         Gizmos.DrawLine(transform.position, posicionFinal);
 
-        // Ejes de rotación
         Matrix4x4 rotationMatrix = Matrix4x4.TRS(posicionFinal, Quaternion.Euler(rotacionAOE), Vector3.one);
         Gizmos.matrix = rotationMatrix;
 
@@ -428,7 +454,6 @@ public class AtaqueAOE : MonoBehaviour
 
         dañoAplicado = true;
 
-        // Detectar todos los colliders en el radio
         Collider[] collidersEnArea = Physics.OverlapSphere(transform.position, radio);
 
         Debug.Log($"[AOE] Detectados {collidersEnArea.Length} objetos en el área");
@@ -436,11 +461,9 @@ public class AtaqueAOE : MonoBehaviour
         int enemigosGolpeados = 0;
         foreach (Collider col in collidersEnArea)
         {
-            // Ignorar al jugador
             if (col.CompareTag("Player"))
                 continue;
 
-            // Buscar componente de vida
             VidaEnemigo enemigo = col.GetComponent<VidaEnemigo>();
             if (enemigo != null)
             {
@@ -453,7 +476,6 @@ public class AtaqueAOE : MonoBehaviour
         Debug.Log($"[AOE] Total enemigos golpeados: {enemigosGolpeados}");
     }
 
-    // Visualizar el área de efecto en Scene View (SOLO en editor)
     void OnDrawGizmos()
     {
 #if UNITY_EDITOR
@@ -468,5 +490,3 @@ public class AtaqueAOE : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, radio);
     }
 }
-
-

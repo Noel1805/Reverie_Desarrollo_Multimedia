@@ -44,6 +44,9 @@ public class New_CharacterController : MonoBehaviour
     private bool tienePollo = false;
     private float jumpHeightOriginal;
     private float gravityOriginal;
+    private int saltosRestantesPollo = 4;
+    private Vector3 posicionInicialPollo;
+    private Quaternion rotacionInicialPollo;
 
     public bool IsMoving { get; private set; }
     public Vector2 CurrentInput { get; private set; }
@@ -189,13 +192,35 @@ public class New_CharacterController : MonoBehaviour
         // Salto (usa los valores actuales que pueden estar modificados por el pollo)
         if (Input.GetButtonDown("Jump") && IsGrounded)
         {
-            Velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            // Verificar saltos disponibles si tiene pollo
+            if (tienePollo)
+            {
+                if (saltosRestantesPollo > 0)
+                {
+                    Velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                    saltosRestantesPollo--;
 
-            if (animator != null)
-                animator.SetBool("IsJumping", true);
+                    Debug.Log($"Saltos restantes: {saltosRestantesPollo}");
+
+                    if (animator != null)
+                        animator.SetBool("IsJumping", true);
+                }
+                else
+                {
+                    Debug.Log("¡No quedan saltos!");
+                }
+            }
+            else
+            {
+                // Salto normal sin pollo
+                Velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+
+                if (animator != null)
+                    animator.SetBool("IsJumping", true);
+            }
         }
 
-        // Aplicar gravedad (reducida si estamos en plataforma vertical o tenemos pollo)
+        // Aplicar gravedad (reducida si estamos en plataforma vertical)
         float gravityMultiplier = wasOnVerticalPlatform ? 0.3f : 1f;
         Velocity.y += gravity * gravityMultiplier * Time.deltaTime;
 
@@ -210,6 +235,12 @@ public class New_CharacterController : MonoBehaviour
         {
             if (animator != null)
                 animator.SetBool("IsJumping", false);
+
+            // Si tiene pollo y ya no quedan saltos, desequiparlo al aterrizar
+            if (tienePollo && saltosRestantesPollo <= 0)
+            {
+                RegresarPolloAPosicionInicial();
+            }
         }
     }
 
@@ -231,14 +262,21 @@ public class New_CharacterController : MonoBehaviour
 
     // ==================== MÉTODOS DEL SISTEMA DEL POLLO ====================
 
-    public void EquiparPollo(GameObject pollo)
+    public void EquiparPollo(GameObject pollo, Vector3 posInicial, Quaternion rotInicial)
     {
         if (tienePollo) return;
 
         tienePollo = true;
         polloEquipado = pollo;
+        saltosRestantesPollo = 4;
 
-        // Limpiar componentes físicos del pollo
+        // Guardar posición inicial del pollo
+        posicionInicialPollo = posInicial;
+        rotacionInicialPollo = rotInicial;
+
+        Debug.Log($"Posición inicial del pollo recibida: {posicionInicialPollo}");
+
+        // Limpiar componentes físicos del pollo (si existieran)
         Rigidbody polloRb = pollo.GetComponent<Rigidbody>();
         if (polloRb != null)
             Destroy(polloRb);
@@ -262,7 +300,58 @@ public class New_CharacterController : MonoBehaviour
         jumpHeight = jumpHeightOriginal * multiplicadorSaltoPollo;
         gravity = gravityOriginal * multiplicadorGravedadPollo;
 
-        Debug.Log("¡Pollo equipado! Salto mejorado y gravedad reducida.");
+        Debug.Log($"¡Pollo equipado! {saltosRestantesPollo} saltos disponibles.");
+    }
+    private void RegresarPolloAPosicionInicial()
+    {
+        if (!tienePollo || polloEquipado == null)
+        {
+            Debug.LogWarning("No se puede regresar el pollo");
+            return;
+        }
+
+        Debug.Log("=== Iniciando regreso del pollo ===");
+        tienePollo = false;
+
+        // Restaurar valores originales de jugador
+        jumpHeight = jumpHeightOriginal;
+        gravity = gravityOriginal;
+
+        // Desparentar el pollo
+        polloEquipado.transform.SetParent(null);
+
+        // Restaurar escala
+        polloEquipado.transform.localScale = Vector3.one;
+
+        // Restaurar posición y rotación inicial
+        polloEquipado.transform.position = posicionInicialPollo;
+        polloEquipado.transform.rotation = rotacionInicialPollo;
+
+        Debug.Log($"Pollo reposicionado en: {posicionInicialPollo}");
+
+        // NO AGREGAR RIGIDBODY - El pollo no lo tiene originalmente
+
+        // Restaurar Collider
+        Collider polloCollider = polloEquipado.GetComponent<Collider>();
+        if (polloCollider != null)
+        {
+            polloCollider.enabled = true;
+            Debug.Log($"✓ Collider restaurado: {polloCollider.GetType().Name}");
+        }
+
+        // Reactivar script de recogida
+        PolloRecogible polloScript = polloEquipado.GetComponent<PolloRecogible>();
+        if (polloScript != null)
+        {
+            polloScript.enabled = true;
+            Debug.Log("✓ Script PolloRecogible reactivado");
+        }
+
+        polloEquipado.SetActive(true);
+
+        Debug.Log("=== ✓ Pollo regresado a su posición original (sin Rigidbody) ===");
+
+        polloEquipado = null;
     }
 
     public void DesequiparPollo()
@@ -285,6 +374,11 @@ public class New_CharacterController : MonoBehaviour
     public bool TienePollo()
     {
         return tienePollo;
+    }
+
+    public int GetSaltosRestantes()
+    {
+        return tienePollo ? saltosRestantesPollo : 0;
     }
 
     // Método público para aplicar fuerzas externas
