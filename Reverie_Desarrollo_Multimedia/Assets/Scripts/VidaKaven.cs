@@ -81,22 +81,22 @@ public class VidaKaven : MonoBehaviour
     /// <summary>
     /// Método público para que otros scripts hagan daño a Kaven
     /// </summary>
-    public void RecibirDano(float cantidad)
+    public void RecibirDano(float cantidad, bool ignorarInvulnerabilidad = false)
     {
         if (estaMuerto) return;
 
-        // <<< NUEVO: invulnerabilidad total por power-up
+        // Invulnerabilidad total por power-up (pera)
         if (invulnerablePorPowerUp)
-        {
-            Debug.Log("Kaven es inmune al daño por power-up (pera). Daño ignorado.");
             return;
-        }
 
-        // Verificar invulnerabilidad normal por golpe reciente
-        if (Time.time - tiempoUltimoDano < tiempoInvulnerabilidad)
+        // Cooldown de daño solo si NO lo estamos ignorando y el tiempoInvulnerabilidad > 0
+        if (!ignorarInvulnerabilidad && tiempoInvulnerabilidad > 0f)
         {
-            Debug.Log("Kaven está invulnerable por cooldown de daño");
-            return;
+            if (Time.time - tiempoUltimoDano < tiempoInvulnerabilidad)
+            {
+                Debug.Log("Kaven está invulnerable por cooldown de daño");
+                return;
+            }
         }
 
         vidaActual -= cantidad;
@@ -112,6 +112,8 @@ public class VidaKaven : MonoBehaviour
             Morir();
         }
     }
+
+
 
     /// <summary>
     /// Actualiza la visualización de los 3 corazones individualmente

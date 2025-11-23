@@ -469,31 +469,4 @@ public class AtaqueAOE : MonoBehaviour
     }
 }
 
-// SCRIPT SIMPLE PARA ENEMIGOS - Colocar en cada enemigo
-public class VidaEnemigo : MonoBehaviour
-{
-    [SerializeField] private float vidaMaxima = 100f;
-    private float vidaActual;
 
-    void Start()
-    {
-        vidaActual = vidaMaxima;
-    }
-
-    public void RecibirDaño(float cantidad)
-    {
-        vidaActual -= cantidad;
-        Debug.Log($"💥 {gameObject.name} recibió {cantidad} de daño. Vida restante: {vidaActual}");
-
-        if (vidaActual <= 0)
-        {
-            Morir();
-        }
-    }
-
-    void Morir()
-    {
-        Debug.Log($"💀 {gameObject.name} ha muerto");
-        Destroy(gameObject);
-    }
-}
