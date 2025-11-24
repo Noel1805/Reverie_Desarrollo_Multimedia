@@ -34,11 +34,9 @@ public class PowerUp_Pera : MonoBehaviour
 
     void Start()
     {
-        // Buscar TODOS los renderers y colliders de la pera
         meshRenderers = GetComponentsInChildren<MeshRenderer>();
         colliders = GetComponentsInChildren<Collider>();
 
-        // Buscar al jugador y su VidaKaven
         jugador = GameObject.FindGameObjectWithTag("Player");
         if (jugador != null)
         {
@@ -63,7 +61,6 @@ public class PowerUp_Pera : MonoBehaviour
             Debug.LogError("[Pera START] ❌ No se encontró ningún objeto con tag 'Player'!");
         }
 
-        // AudioSource
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null && sonidoRecoger != null)
         {
@@ -77,7 +74,6 @@ public class PowerUp_Pera : MonoBehaviour
         if (!estaActivo || jugador == null)
             return;
 
-        // Centro de la pera (usamos transform; si quieres, puedes usar col.bounds.center)
         Vector3 centroPera = transform.position;
 
         float distancia = Vector3.Distance(centroPera, jugador.transform.position);
@@ -106,7 +102,6 @@ public class PowerUp_Pera : MonoBehaviour
 
     void RecogerPera()
     {
-        // Activar invulnerabilidad en VidaKaven
         if (vidaKaven != null && vidaKaven.EstaVivo())
         {
             vidaKaven.ActivarInvulnerabilidadTemporal(duracionInvulnerabilidad);
@@ -120,7 +115,6 @@ public class PowerUp_Pera : MonoBehaviour
                 Debug.LogWarning("[Pera] No se pudo activar invulnerabilidad (VidaKaven nulo o muerto).");
         }
 
-        // Instanciar aura de escudo si hay prefab
         if (auraEscudoPrefab != null && jugador != null)
         {
             GameObject aura = Instantiate(
@@ -131,20 +125,17 @@ public class PowerUp_Pera : MonoBehaviour
 
             aura.transform.SetParent(jugador.transform, true);
 
-            // Destruir aura después de la misma duración que la invulnerabilidad
             Destroy(aura, duracionInvulnerabilidad);
 
             if (mostrarDebug)
                 Debug.Log("[Pera] ✨ Aura de escudo instanciada y parentada al jugador.");
         }
 
-        // Consumir pera
         ConsumirYRespawnear();
     }
 
     void ConsumirYRespawnear()
     {
-        // Efectos visuales y sonido
         if (efectoRecoger != null)
         {
             Instantiate(efectoRecoger, transform.position, Quaternion.identity);
@@ -154,6 +145,9 @@ public class PowerUp_Pera : MonoBehaviour
         {
             audioSource.PlayOneShot(sonidoRecoger);
         }
+
+        // 🔹 NUEVA LÍNEA PARA SUMAR FRUTA
+        GetComponent<FruitCollectNotifier>()?.NotificarRecoleccion();
 
         OcultarPera();
 
@@ -213,12 +207,11 @@ public class PowerUp_Pera : MonoBehaviour
             Debug.Log("[Pera] ✨ Power-up de Pera ha reaparecido");
     }
 
-    // Gizmos: radio de recogida solo en Scene
     void OnDrawGizmosSelected()
     {
         Vector3 centro = transform.position;
 
-        Gizmos.color = new Color(0.3f, 0.8f, 1f, 0.25f); // celestecito
+        Gizmos.color = new Color(0.3f, 0.8f, 1f, 0.25f);
         Gizmos.DrawSphere(centro, distanciaRecoger);
 
         Gizmos.color = new Color(0.3f, 0.8f, 1f, 1f);

@@ -167,6 +167,9 @@ public class PowerUp_Mango : MonoBehaviour
             audioSource.PlayOneShot(sonidoRecoger);
         }
 
+        // 🔹 LÍNEA NUEVA PARA EL CONTADOR DE FRUTAS
+        GetComponent<FruitCollectNotifier>()?.NotificarRecoleccion();
+
         OcultarMango();
 
         if (respawnear)
@@ -215,7 +218,6 @@ public class PowerUp_Mango : MonoBehaviour
     {
         estaActivo = false;
 
-        // 🔹 Apagar TODOS los MeshRenderers
         if (meshRenderers != null)
         {
             foreach (var mr in meshRenderers)
@@ -225,7 +227,6 @@ public class PowerUp_Mango : MonoBehaviour
             }
         }
 
-        // 🔹 Desactivar TODOS los Colliders del mango
         if (colliders != null)
         {
             foreach (var c in colliders)
@@ -267,7 +268,6 @@ public class PowerUp_Mango : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
-        // Centro usando el primer collider si existe
         Collider c = GetComponentInChildren<Collider>();
         Vector3 centro = c != null ? c.bounds.center : transform.position;
 

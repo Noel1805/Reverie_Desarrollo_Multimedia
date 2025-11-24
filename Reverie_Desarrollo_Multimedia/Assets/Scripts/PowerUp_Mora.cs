@@ -174,6 +174,9 @@ public class PowerUp_Mora : MonoBehaviour
             audioSource.PlayOneShot(sonidoRecoger);
         }
 
+        // 🔹 LÍNEA NUEVA PARA SUMAR LA FRUTA
+        GetComponent<FruitCollectNotifier>()?.NotificarRecoleccion();
+
         OcultarMora();
 
         if (respawnear)
