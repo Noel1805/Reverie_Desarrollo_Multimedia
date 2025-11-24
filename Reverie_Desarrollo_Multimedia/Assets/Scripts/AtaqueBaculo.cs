@@ -1,0 +1,492 @@
+﻿using UnityEngine;
+using System.Collections;
+
+// SCRIPT COMPLETO: Colocar este script en el JUGADOR
+public class AtaqueBaculo : MonoBehaviour
+{
+    [Header("Referencias")]
+    [SerializeField] private Animator animator;
+    [SerializeField] private Transform puntoLanzamiento;
+    [SerializeField] private GameObject vfxAtaque1;
+    [SerializeField] private GameObject vfxAtaque2;
+    [SerializeField] private GameObject vfxAtaque3;
+
+    [Header("Configuración de Ataques")]
+    [SerializeField] private string nombreAtaque1 = "ataque1";
+    [SerializeField] private string nombreAtaque2 = "ataque2";
+    [SerializeField] private string nombreAtaque3 = "ataque3";
+
+    [Header("Teclas de Ataque")]
+    [SerializeField] private KeyCode teclaAtaque1 = KeyCode.Alpha1;
+    [SerializeField] private KeyCode teclaAtaque2 = KeyCode.Alpha2;
+    [SerializeField] private KeyCode teclaAtaque3 = KeyCode.Alpha3;
+
+    [Header("Ajustes del Proyectil (Ataques 1 y 2)")]
+    [SerializeField] private Vector3 escalaProyectil = Vector3.one;
+    [SerializeField] private Vector3 rotacionProyectil = Vector3.zero;
+
+    [Header("Configuración Ataque 1 (Proyectil)")]
+    [SerializeField] private float velocidadAtaque1 = 20f;
+    [SerializeField] private float dañoAtaque1 = 25f;
+
+    [Header("Configuración Ataque 2 (Proyectil)")]
+    [SerializeField] private float velocidadAtaque2 = 20f;
+    [SerializeField] private float dañoAtaque2 = 30f;
+
+    [Header("Configuración Ataque 3 (AOE)")]
+    [SerializeField] private float distanciaAOE = 4f;
+    [SerializeField] private Vector3 offsetPosicionAOE = Vector3.zero;
+    [SerializeField] private Vector3 rotacionAOE = new Vector3(-90, 0, 0);
+    [SerializeField] private float radioAOE = 3f;
+    [SerializeField] private float dañoAtaque3 = 50f;
+    [SerializeField] private float duracionVFXAOE = 2f;
+    [SerializeField] private Vector3 escalaAOE = new Vector3(3, 3, 3);
+
+    [Header("General")]
+    [SerializeField] private float cooldownAtaque = 1f;
+
+    [Header("Timing")]
+    [SerializeField] private float tiempoLanzamiento = 0.5f;
+
+    private bool puedeAtacar = true;
+    private bool atacando = false;
+    private EquipadorBaculo equipador;
+    private int ataqueActualIndex = 0;
+
+    // ===== SISTEMA DE BUFFS DE DAÑO =====
+    [Header("Debug Buff de Daño")]
+    [SerializeField] private float multiplicadorDañoActual = 1f;   // 1 = daño normal
+    [SerializeField] private float dañoDebugActual = 0f;           // daño final aplicado en el último ataque
+
+    private Coroutine buffDañoActivo;
+
+    // ===== NUEVO: CONTROL DE MOVIMIENTO =====
+    private New_CharacterController movimiento;
+    private bool movimientoDesactivadoPorAtaque = false;
+
+    void Start()
+    {
+        if (animator == null)
+            animator = GetComponent<Animator>();
+
+        equipador = GetComponent<EquipadorBaculo>();
+        movimiento = GetComponent<New_CharacterController>();
+    }
+
+    void Update()
+    {
+        // Verificar que tenga el báculo equipado
+        if (equipador != null && !equipador.TieneBaculoEquipado())
+            return;
+
+        // Si está en cooldown o ya está atacando, no hacer nada
+        if (!puedeAtacar || atacando)
+            return;
+
+        // ===== SOLO PERMITIR ATAQUE SI EL JUGADOR ESTÁ QUIETO =====
+        // Usamos el input básico (Horizontal/Vertical). Si usas otros ejes, cámbialos aquí.
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+
+        // Si hay input de movimiento, no permitir iniciar ataque
+        if (Mathf.Abs(h) > 0.01f || Mathf.Abs(v) > 0.01f)
+            return;
+        // =============================================
+
+        // Detectar teclas de ataque
+        if (Input.GetKeyDown(teclaAtaque1))
+        {
+            IniciarAtaque(nombreAtaque1, 1);
+        }
+        else if (Input.GetKeyDown(teclaAtaque2))
+        {
+            IniciarAtaque(nombreAtaque2, 2);
+        }
+        else if (Input.GetKeyDown(teclaAtaque3))
+        {
+            IniciarAtaque(nombreAtaque3, 3);
+        }
+    }
+
+    void IniciarAtaque(string nombreAnimacion, int numeroAtaque)
+    {
+        atacando = true;
+        puedeAtacar = false;
+        ataqueActualIndex = numeroAtaque;
+
+        // ===== BLOQUEAR MOVIMIENTO MIENTRAS ATACA =====
+        if (movimiento != null && movimiento.enabled)
+        {
+            movimiento.enabled = false;
+            movimientoDesactivadoPorAtaque = true;
+        }
+        // ==============================================
+
+        // Reproducir animación
+        if (animator != null)
+        {
+            animator.SetTrigger(nombreAnimacion);
+        }
+
+        // Esperar el tiempo de la animación antes de lanzar el ataque
+        Invoke(nameof(LanzarAtaque), tiempoLanzamiento);
+
+        // Reiniciar cooldown
+        Invoke(nameof(ReiniciarCooldown), cooldownAtaque);
+    }
+
+    void LanzarAtaque()
+    {
+        if (ataqueActualIndex == 3)
+        {
+            // Ataque 3 es AOE
+            LanzarAOE();
+        }
+        else
+        {
+            // Ataques 1 y 2 son proyectiles
+            LanzarVFX();
+        }
+
+        atacando = false;
+
+        // ===== VOLVER A PERMITIR MOVIMIENTO DESPUÉS DEL ATAQUE =====
+        if (movimiento != null && movimientoDesactivadoPorAtaque)
+        {
+            movimiento.enabled = true;
+            movimientoDesactivadoPorAtaque = false;
+        }
+        // ============================================================
+    }
+
+    void LanzarVFX()
+    {
+        // Seleccionar el VFX y configuración según el ataque
+        GameObject vfxPrefab = null;
+        float velocidad = 0;
+        float daño = 0;
+
+        switch (ataqueActualIndex)
+        {
+            case 1:
+                vfxPrefab = vfxAtaque1;
+                velocidad = velocidadAtaque1;
+                daño = dañoAtaque1;
+                break;
+            case 2:
+                vfxPrefab = vfxAtaque2;
+                velocidad = velocidadAtaque2;
+                daño = dañoAtaque2;
+                break;
+        }
+
+        if (vfxPrefab == null)
+        {
+            Debug.LogWarning("No se ha asignado el VFX para el ataque " + ataqueActualIndex);
+            return;
+        }
+
+        // Determinar punto de lanzamiento
+        Transform puntoOrigen = puntoLanzamiento != null ? puntoLanzamiento : transform;
+
+        // Calcular rotación final
+        Quaternion rotacionFinal = puntoOrigen.rotation * Quaternion.Euler(rotacionProyectil);
+
+        // Instanciar el VFX
+        GameObject vfx = Instantiate(vfxPrefab, puntoOrigen.position, rotacionFinal);
+        vfx.transform.localScale = escalaProyectil;
+
+        // Añadir componente de proyectil
+        ProyectilVFX proyectil = vfx.GetComponent<ProyectilVFX>();
+        if (proyectil == null)
+        {
+            proyectil = vfx.AddComponent<ProyectilVFX>();
+        }
+
+        // Aplicar daño con multiplicador de buff
+        proyectil.Inicializar(velocidad, ObtenerDañoModificado(daño), transform.forward);
+    }
+
+    void LanzarAOE()
+    {
+        if (vfxAtaque3 == null)
+        {
+            Debug.LogWarning("No se ha asignado el VFX para el ataque AOE");
+            return;
+        }
+
+        // Calcular posición base (delante del jugador)
+        Vector3 posicionBase = transform.position + transform.forward * distanciaAOE;
+
+        // Aplicar offset adicional (relativo a la rotación del jugador)
+        Vector3 offsetRotado = transform.TransformDirection(offsetPosicionAOE);
+        Vector3 posicionFinal = posicionBase + offsetRotado;
+
+        // Aplicar rotación configurada
+        Quaternion rotacionFinal = Quaternion.Euler(rotacionAOE);
+
+        // Instanciar el VFX del AOE
+        GameObject vfxAOE = Instantiate(vfxAtaque3, posicionFinal, rotacionFinal);
+        vfxAOE.transform.localScale = escalaAOE;
+
+        Debug.Log($"[AOE] Instanciado en: {posicionFinal} | Rotación: {rotacionAOE} | Escala: {escalaAOE}");
+
+        // Intentar reproducir Particle Systems
+        ParticleSystem[] particulas = vfxAOE.GetComponentsInChildren<ParticleSystem>();
+        if (particulas.Length > 0)
+        {
+            foreach (ParticleSystem ps in particulas)
+            {
+                ps.Play();
+            }
+        }
+        else
+        {
+#if UNITY_2019_3_OR_NEWER
+            UnityEngine.VFX.VisualEffect[] vfxGraphs = vfxAOE.GetComponentsInChildren<UnityEngine.VFX.VisualEffect>();
+            if (vfxGraphs.Length > 0)
+            {
+                foreach (var vfx in vfxGraphs)
+                {
+                    vfx.Play();
+                }
+            }
+#endif
+        }
+
+        // Añadir componente AOE
+        AtaqueAOE aoe = vfxAOE.GetComponent<AtaqueAOE>();
+        if (aoe == null)
+        {
+            aoe = vfxAOE.AddComponent<AtaqueAOE>();
+        }
+
+        // Aplicar daño con multiplicador de buff
+        aoe.Inicializar(radioAOE, ObtenerDañoModificado(dañoAtaque3), duracionVFXAOE);
+    }
+
+    void ReiniciarCooldown()
+    {
+        puedeAtacar = true;
+    }
+
+    // ===== SISTEMA DE BUFFS DE DAÑO =====
+
+    /// <summary>
+    /// Método público para aplicar buff de daño desde power-ups externos
+    /// </summary>
+    public void AplicarBuffDaño(float multiplicador, float duracion)
+    {
+        // Si ya hay un buff activo, detenerlo
+        if (buffDañoActivo != null)
+        {
+            StopCoroutine(buffDañoActivo);
+        }
+
+        // Iniciar nuevo buff
+        buffDañoActivo = StartCoroutine(BuffDañoCoroutine(multiplicador, duracion));
+    }
+
+    private IEnumerator BuffDañoCoroutine(float multiplicador, float duracion)
+    {
+        multiplicadorDañoActual = multiplicador;
+        float porcentaje = (multiplicador - 1) * 100;
+        Debug.Log($"[Ataque] 💪 Buff de daño activado: x{multiplicador} (+{porcentaje:F0}% más daño) por {duracion}s");
+
+        yield return new WaitForSeconds(duracion);
+
+        multiplicadorDañoActual = 1f;
+        buffDañoActivo = null;
+        Debug.Log("[Ataque] ⏰ Buff de daño terminado. Daño normal restaurado.");
+    }
+
+    /// <summary>
+    /// Obtiene el daño modificado aplicando el multiplicador actual
+    /// </summary>
+    public float ObtenerDañoModificado(float dañoBase)
+    {
+        float dañoFinal = dañoBase * multiplicadorDañoActual;
+
+        if (multiplicadorDañoActual > 1f)
+        {
+            Debug.Log($"[Ataque] 🔥 Daño buffeado: {dañoBase} → {dañoFinal} (x{multiplicadorDañoActual})");
+        }
+
+        // Guardar en debug para verlo en el Inspector
+        dañoDebugActual = dañoFinal;
+
+        return dañoFinal;
+    }
+
+    /// <summary>
+    /// Obtiene el multiplicador actual (útil para mostrar en UI)
+    /// </summary>
+    public float ObtenerMultiplicadorActual()
+    {
+        return multiplicadorDañoActual;
+    }
+
+    /// <summary>
+    /// Verifica si hay un buff activo
+    /// </summary>
+    public bool TieneBuffActivo()
+    {
+        return multiplicadorDañoActual > 1f;
+    }
+
+    // Visualizar el área de AOE en el editor (SOLO en Scene View)
+    void OnDrawGizmosSelected()
+    {
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            return;
+#endif
+
+        Vector3 posicionBase = transform.position + transform.forward * distanciaAOE;
+        Vector3 offsetRotado = transform.TransformDirection(offsetPosicionAOE);
+        Vector3 posicionFinal = posicionBase + offsetRotado;
+
+        Gizmos.color = new Color(1, 0, 0, 0.3f);
+        Gizmos.DrawSphere(posicionFinal, radioAOE);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(posicionFinal, radioAOE);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(transform.position, posicionFinal);
+
+        Matrix4x4 rotationMatrix = Matrix4x4.TRS(posicionFinal, Quaternion.Euler(rotacionAOE), Vector3.one);
+        Gizmos.matrix = rotationMatrix;
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(Vector3.zero, Vector3.right * 2);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawRay(Vector3.zero, Vector3.up * 2);
+
+        Gizmos.color = Color.blue;
+        Gizmos.DrawRay(Vector3.zero, Vector3.forward * 2);
+
+        Gizmos.matrix = Matrix4x4.identity;
+    }
+}
+
+// COMPONENTE PARA PROYECTILES (Ataques 1 y 2)
+public class ProyectilVFX : MonoBehaviour
+{
+    private float velocidad;
+    private float daño;
+    private Vector3 direccion;
+
+    [SerializeField] private float tiempoVida = 5f;
+    [SerializeField] private float radioCollider = 0.5f;
+
+    public void Inicializar(float vel, float dmg, Vector3 dir)
+    {
+        velocidad = vel;
+        daño = dmg;
+        direccion = dir.normalized;
+
+        // Añadir collider si no existe
+        SphereCollider collider = GetComponent<SphereCollider>();
+        if (collider == null)
+        {
+            collider = gameObject.AddComponent<SphereCollider>();
+        }
+        collider.isTrigger = true;
+        collider.radius = radioCollider;
+
+        // Añadir Rigidbody si no existe
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = gameObject.AddComponent<Rigidbody>();
+        }
+        rb.isKinematic = true;
+        rb.useGravity = false;
+
+        Destroy(gameObject, tiempoVida);
+    }
+
+    void Update()
+    {
+        transform.position += direccion * velocidad * Time.deltaTime;
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+            return;
+
+        VidaEnemigo enemigo = other.GetComponent<VidaEnemigo>();
+        if (enemigo != null)
+        {
+            enemigo.RecibirDaño(daño);
+        }
+
+        Destroy(gameObject);
+    }
+}
+
+// COMPONENTE PARA ATAQUE AOE (Ataque 3)
+public class AtaqueAOE : MonoBehaviour
+{
+    private float radio;
+    private float daño;
+    private bool dañoAplicado = false;
+
+    public void Inicializar(float rad, float dmg, float duracion)
+    {
+        radio = rad;
+        daño = dmg;
+
+        // Aplicar daño inmediatamente
+        Invoke(nameof(AplicarDaño), 0.1f);
+
+        // Destruir después de la duración
+        Destroy(gameObject, duracion);
+    }
+
+    void AplicarDaño()
+    {
+        if (dañoAplicado)
+            return;
+
+        dañoAplicado = true;
+
+        Collider[] collidersEnArea = Physics.OverlapSphere(transform.position, radio);
+
+        Debug.Log($"[AOE] Detectados {collidersEnArea.Length} objetos en el área");
+
+        int enemigosGolpeados = 0;
+        foreach (Collider col in collidersEnArea)
+        {
+            if (col.CompareTag("Player"))
+                continue;
+
+            VidaEnemigo enemigo = col.GetComponent<VidaEnemigo>();
+            if (enemigo != null)
+            {
+                enemigo.RecibirDaño(daño);
+                enemigosGolpeados++;
+                Debug.Log($"[AOE] ⚡ Golpeó a {col.gameObject.name} con {daño} de daño");
+            }
+        }
+
+        Debug.Log($"[AOE] Total enemigos golpeados: {enemigosGolpeados}");
+    }
+
+    void OnDrawGizmos()
+    {
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            return;
+#endif
+
+        Gizmos.color = new Color(1, 0.5f, 0, 0.3f);
+        Gizmos.DrawSphere(transform.position, radio);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, radio);
+    }
+}
