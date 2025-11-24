@@ -12,7 +12,7 @@ public class MountableChicken_New : MonoBehaviour
     [Header("🎮 Controles")]
     [SerializeField] private KeyCode mountKey = KeyCode.E;
     [SerializeField] private KeyCode jumpKey = KeyCode.Space;
-    [SerializeField] private float mountRadius = 2f; // ✅ CAMBIADO de 2.5f a 2f
+    [SerializeField] private float mountRadius = 2f;
 
     [Header("📍 Referencias")]
     [SerializeField] private Transform seatPoint;
@@ -36,6 +36,10 @@ public class MountableChicken_New : MonoBehaviour
     [Tooltip("Límite Y para detectar caída de Maggi (debe coincidir con PlayerCheckpointSystem)")]
     [SerializeField] private float limiteY = -10f;
 
+    [Header("🚫 Sistema de Desmontaje Forzado")]
+    [Tooltip("Isla específica donde el jugador se baja automáticamente y NO puede volver a montar (permanente)")]
+    [SerializeField] private GameObject islaBloqueoMontaje;
+
     // Referencias privadas
     private CharacterController chickenController;
     private Transform player;
@@ -53,6 +57,9 @@ public class MountableChicken_New : MonoBehaviour
     private Vector3 spawnPos;
     private Quaternion spawnRot;
     private Quaternion originalPlayerModelRotation;
+
+    // NUEVO: Sistema de bloqueo permanente de montaje
+    private bool montajeBloqueadoPermanentemente = false;
 
     void Awake()
     {
@@ -126,13 +133,20 @@ public class MountableChicken_New : MonoBehaviour
         {
             HandleMovement();
             CheckDismount();
-            CheckFall(); // NUEVO: Verificar si Maggi cayó mientras está montado
+            CheckFall();
         }
     }
 
     void CheckMount()
     {
         if (player == null) return;
+
+        // NUEVO: Verificar si el montaje está bloqueado permanentemente
+        if (montajeBloqueadoPermanentemente)
+        {
+            // No hacer nada - el montaje está bloqueado para siempre
+            return;
+        }
 
         float dist = Vector3.Distance(player.position, transform.position);
         if (dist <= mountRadius && Input.GetKeyDown(mountKey))
@@ -202,6 +216,75 @@ public class MountableChicken_New : MonoBehaviour
         SetAnimation(0f);
 
         Debug.Log("✅ Desmontado");
+    }
+
+    /// <summary>
+    /// NUEVO: Desmontaje forzado con bloqueo permanente
+    /// Se llama automáticamente cuando toca la isla especial
+    /// </summary>
+    void ForzarDesmontaje()
+    {
+        if (!isMounted) return;
+
+        Debug.Log("🚫 DESMONTAJE FORZADO - Maggi ha sido bloqueada permanentemente");
+
+        // Desmontar al jugador
+        player.SetParent(null);
+
+        Vector3 dismountPos = transform.position + (transform.right * 0.5f);
+        player.position = dismountPos;
+        player.rotation = transform.rotation;
+
+        if (playerModel != null)
+        {
+            playerModel.localRotation = originalPlayerModelRotation;
+        }
+
+        if (playerCC != null) playerCC.enabled = true;
+        if (playerMovement != null) playerMovement.enabled = true;
+        if (playerAnimator != null) playerAnimator.enabled = true;
+
+        isMounted = false;
+
+        // BLOQUEAR MONTAJE PERMANENTEMENTE
+        montajeBloqueadoPermanentemente = true;
+
+        // DETENER COMPLETAMENTE A MAGGI
+        velocity = Vector3.zero;
+        turnSmoothVelocity = 0f;
+
+        // DESACTIVAR COMPLETAMENTE EL ANIMATOR (se congela en su pose actual)
+        if (maggiAnimator != null)
+        {
+            maggiAnimator.enabled = false;
+            Debug.Log("🎭 Animator de Maggi desactivado - Congelada en pose actual");
+        }
+
+        // IMPORTANTE: NO desactivar el CharacterController para evitar atravesarla
+        // Solo desactivar el script para que no se mueva
+        this.enabled = false;
+
+        Debug.Log("🔒 Montaje de Maggi BLOQUEADO PERMANENTEMENTE - Maggi congelada");
+    }
+
+    /// <summary>
+    /// NUEVO: Detecta cuando Maggi toca la isla especial
+    /// </summary>
+    void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        // Solo verificar si está montado
+        if (!isMounted) return;
+
+        // Verificar si tocó la isla de bloqueo
+        if (islaBloqueoMontaje != null && hit.gameObject == islaBloqueoMontaje)
+        {
+            // Verificar que está tocando desde arriba (no los lados)
+            if (hit.normal.y > 0.5f)
+            {
+                Debug.Log($"🏝️ Maggi tocó la isla especial: {islaBloqueoMontaje.name}");
+                ForzarDesmontaje();
+            }
+        }
     }
 
     void HandleMovement()
@@ -282,23 +365,14 @@ public class MountableChicken_New : MonoBehaviour
         SetAnimation(isMoving ? 1f : 0f);
     }
 
-    /// <summary>
-    /// NUEVO: Verifica si Maggi cayó por debajo del límite Y
-    /// </summary>
     void CheckFall()
     {
         if (transform.position.y < limiteY)
         {
             Debug.LogWarning("🐔 ¡Maggi cayó! El sistema de checkpoint del jugador manejará el respawn");
-            // No hacemos nada aquí - el PlayerCheckpointSystem detectará al jugador cayendo
-            // y llamará a OnPlayerRespawn()
         }
     }
 
-    /// <summary>
-    /// MEJORADO: Método llamado cuando el jugador respawnea
-    /// Ahora también respawnea a Maggi en su posición inicial
-    /// </summary>
     public void OnPlayerRespawn()
     {
         Debug.Log("🔄 Iniciando respawn de Maggi...");
@@ -331,10 +405,6 @@ public class MountableChicken_New : MonoBehaviour
         Debug.Log("✅ Maggi reseteada en posición inicial");
     }
 
-    /// <summary>
-    /// NUEVO: Actualiza la posición de spawn de Maggi
-    /// Úsalo cuando quieras que Maggi respawnee en una nueva ubicación
-    /// </summary>
     public void ActualizarSpawnPoint(Vector3 nuevaPosicion, Quaternion nuevaRotacion)
     {
         spawnPos = nuevaPosicion;
@@ -353,7 +423,7 @@ public class MountableChicken_New : MonoBehaviour
     void OnDrawGizmosSelected()
     {
         // Radio de montaje
-        Gizmos.color = Color.yellow;
+        Gizmos.color = montajeBloqueadoPermanentemente ? Color.red : Color.yellow;
         Gizmos.DrawWireSphere(transform.position, mountRadius);
 
         // Dirección de Maggi
@@ -367,6 +437,13 @@ public class MountableChicken_New : MonoBehaviour
             Vector3 playerPos = seatPoint.position + seatPoint.TransformDirection(playerPositionOffset);
             Gizmos.DrawWireSphere(playerPos, 0.3f);
             Gizmos.DrawLine(seatPoint.position, playerPos);
+        }
+
+        // NUEVO: Visualizar conexión con isla de bloqueo
+        if (islaBloqueoMontaje != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(transform.position, islaBloqueoMontaje.transform.position);
         }
     }
 }
