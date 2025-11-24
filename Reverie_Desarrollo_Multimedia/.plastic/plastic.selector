@@ -1,4 +1,0 @@
-repository "Reverie_Desarrollo_Multimedia/Reverie_Desarrollo_Multimedia@4674135329866@cloud"
-  path "/"
-    br "/main"
-    co "/main"
