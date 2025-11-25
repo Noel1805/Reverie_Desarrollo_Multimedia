@@ -6,10 +6,10 @@ public class MovingPlatformHorizontal : MonoBehaviour
     public enum StartPoint { PositionA, PositionB }
     public enum HorizontalDirection
     {
-        Right,      // Derecha (X+)
-        Left,       // Izquierda (X-)
-        Forward,    // Adelante (Z+)
-        Backward    // Atrás (Z-)
+        Right,      
+        Left,      
+        Forward,   
+        Backward   
     }
 
     [Header("Dirección Horizontal")]
@@ -41,9 +41,9 @@ public class MovingPlatformHorizontal : MonoBehaviour
 
     [Header("Método de Movimiento")]
     [Tooltip("TRUE: Hacer hijo (mejor para rotaciones). FALSE: Mover con delta (mejor para CharacterController)")]
-    public bool useParenting = true; // ⭐ CAMBIADO A TRUE POR DEFECTO
+    public bool useParenting = true; 
 
-    // ---- Internos ----
+
     private Vector3 A;
     private Vector3 B;
     private float cycle;
@@ -51,13 +51,13 @@ public class MovingPlatformHorizontal : MonoBehaviour
     private Rigidbody rb;
     private Vector3 finalDirection;
 
-    // Sistema de jugadores
+
     private Vector3 lastPosition;
     private Dictionary<Transform, Transform> playersOriginalParent = new Dictionary<Transform, Transform>();
     private HashSet<Transform> playersOnPlatform = new HashSet<Transform>();
     private GameObject triggerDetector;
 
-    // ⭐ NUEVO: Para almacenar el delta de movimiento
+
     private Vector3 platformDelta;
 
     void Awake()
@@ -66,17 +66,17 @@ public class MovingPlatformHorizontal : MonoBehaviour
         A = transform.position;
         lastPosition = transform.position;
 
-        // Determinar dirección
+
         finalDirection = GetHorizontalDirection();
         finalDirection = finalDirection.normalized;
         distance = Mathf.Abs(distance);
         B = A + finalDirection * distance;
 
-        // Construir ciclo
+
         cycle = waitAtA + travelTime + waitAtB + travelTime;
         if (cycle < 0.0001f) cycle = 0.0001f;
 
-        // Inicializar phase
+
         switch (startAt)
         {
             case StartPoint.PositionA:
@@ -89,7 +89,7 @@ public class MovingPlatformHorizontal : MonoBehaviour
                 break;
         }
 
-        // Crear detector de jugadores
+
         CrearTriggerDetector();
     }
 
@@ -160,7 +160,7 @@ public class MovingPlatformHorizontal : MonoBehaviour
         AplicarPosicion(true);
     }
 
-    // ⭐ NUEVO: LateUpdate para mover jugadores DESPUÉS de que se hayan movido ellos mismos
+
     void LateUpdate()
     {
         if (!useParenting)
@@ -180,7 +180,7 @@ public class MovingPlatformHorizontal : MonoBehaviour
 
     void AplicarPosicion(bool viaRigidbody = false)
     {
-        // ⭐ Guardar posición ANTES de mover
+
         Vector3 posicionAnterior = transform.position;
 
         float p = phase;
@@ -217,7 +217,7 @@ public class MovingPlatformHorizontal : MonoBehaviour
             }
         }
 
-        // ⭐ Calcular delta DESPUÉS de mover
+
         platformDelta = transform.position - posicionAnterior;
     }
 
@@ -247,7 +247,7 @@ public class MovingPlatformHorizontal : MonoBehaviour
 
     void MoverJugadores()
     {
-        // ⭐ Usar el delta calculado en AplicarPosicion
+
         if (platformDelta.sqrMagnitude > 0.0001f)
         {
             foreach (Transform player in playersOnPlatform)
@@ -257,19 +257,19 @@ public class MovingPlatformHorizontal : MonoBehaviour
                     CharacterController cc = player.GetComponent<CharacterController>();
                     if (cc != null)
                     {
-                        // ⭐ Mover con CharacterController
+
                         cc.Move(platformDelta);
                     }
                     else
                     {
-                        // ⭐ Si no tiene CharacterController, mover directamente
+
                         player.position += platformDelta;
                     }
                 }
             }
         }
 
-        // ⭐ Resetear delta
+
         platformDelta = Vector3.zero;
     }
 
@@ -282,13 +282,13 @@ public class MovingPlatformHorizontal : MonoBehaviour
 
         if (useParenting)
         {
-            // Guardar padre original
+
             playersOriginalParent[player] = player.parent;
 
-            // Hacer hijo de la plataforma
+
             player.SetParent(transform);
 
-            // ⭐ NUEVO: Debug para confirmar
+
             Debug.Log($"Jugador {player.name} subió a la plataforma (PARENTING)");
         }
         else
@@ -306,7 +306,7 @@ public class MovingPlatformHorizontal : MonoBehaviour
 
         if (useParenting)
         {
-            // Restaurar padre original
+
             if (playersOriginalParent.ContainsKey(player))
             {
                 player.SetParent(playersOriginalParent[player]);

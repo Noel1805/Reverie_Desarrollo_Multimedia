@@ -24,14 +24,14 @@ public class AudioManager : MonoBehaviour
 
     [Header("Configuración Inicial")]
     [SerializeField] private bool playMusicOnStart = true;
-    [SerializeField] private AudioClip initialMusic; // Asigna aquí tu música inicial
+    [SerializeField] private AudioClip initialMusic; 
 
     private AudioClip currentClip;
     private bool isTransitioning = false;
 
     private void Awake()
     {
-        // Singleton pattern
+
         if (Instance == null)
         {
             Instance = this;
@@ -46,7 +46,7 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
-        // Inicia la música automáticamente al comenzar el juego
+
         if (playMusicOnStart && initialMusic != null)
         {
             PlayMusic(initialMusic);
@@ -70,7 +70,7 @@ public class AudioManager : MonoBehaviour
         transitionSource.volume = 0f;
     }
 
-    // Métodos públicos para cambiar música
+
     public void PlaySpringExploration()
     {
         PlayMusic(musicSpringExploration);
@@ -96,7 +96,7 @@ public class AudioManager : MonoBehaviour
         PlayMusic(musicFinalCabin);
     }
 
-    // Método principal para cambiar música con transición
+
     private void PlayMusic(AudioClip newClip)
     {
         if (newClip == null)
@@ -105,7 +105,7 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        // Si ya está sonando esta música, no hacer nada
+
         if (currentClip == newClip && musicSource.isPlaying)
         {
             return;
@@ -113,7 +113,7 @@ public class AudioManager : MonoBehaviour
 
         currentClip = newClip;
 
-        // Si no hay música sonando, empezar directamente
+
         if (!musicSource.isPlaying)
         {
             musicSource.clip = newClip;
@@ -129,14 +129,14 @@ public class AudioManager : MonoBehaviour
     {
         isTransitioning = true;
 
-        // Configurar el segundo AudioSource con la nueva música
+
         transitionSource.clip = newClip;
         transitionSource.Play();
         transitionSource.volume = 0f;
 
         float elapsed = 0f;
 
-        // Fade out de la música actual y fade in de la nueva
+
         while (elapsed < fadeTime)
         {
             elapsed += Time.deltaTime;
@@ -148,7 +148,7 @@ public class AudioManager : MonoBehaviour
             yield return null;
         }
 
-        // Intercambiar las fuentes de audio
+
         musicSource.Stop();
         AudioSource temp = musicSource;
         musicSource = transitionSource;
@@ -160,7 +160,7 @@ public class AudioManager : MonoBehaviour
         isTransitioning = false;
     }
 
-    // Método para detener la música
+
     public void StopMusic()
     {
         StartCoroutine(FadeOutMusic());

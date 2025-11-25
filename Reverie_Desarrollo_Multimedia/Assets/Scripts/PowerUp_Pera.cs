@@ -146,7 +146,7 @@ public class PowerUp_Pera : MonoBehaviour
             audioSource.PlayOneShot(sonidoRecoger);
         }
 
-        // 🔹 NUEVA LÍNEA PARA SUMAR FRUTA
+
         GetComponent<FruitCollectNotifier>()?.NotificarRecoleccion();
 
         OcultarPera();

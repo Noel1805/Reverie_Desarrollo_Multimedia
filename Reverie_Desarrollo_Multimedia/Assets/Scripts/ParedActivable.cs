@@ -4,8 +4,8 @@ public class ParedActivable : MonoBehaviour
 {
     [Header("Configuración")]
     [SerializeField] private bool empiezaActiva = false;
-    [SerializeField] private Color colorInactivo = new Color(0f, 1f, 0f, 0.3f); // Verde
-    [SerializeField] private Color colorActivo = new Color(1f, 0f, 0f, 0.5f);   // Rojo
+    [SerializeField] private Color colorInactivo = new Color(0f, 1f, 0f, 0.3f); 
+    [SerializeField] private Color colorActivo = new Color(1f, 0f, 0f, 0.5f);   
 
     [Header("Efectos Visuales (Opcional)")]
     [SerializeField] private GameObject efectoActivacion;
@@ -22,14 +22,14 @@ public class ParedActivable : MonoBehaviour
 
     void Start()
     {
-        // Obtener todos los colliders (por si hay múltiples)
+
         colliders = GetComponents<Collider>();
         if (colliders.Length == 0)
         {
             colliders = GetComponentsInChildren<Collider>();
         }
 
-        // Asegurar que no tenga mesh renderer visible
+
         MeshRenderer renderer = GetComponent<MeshRenderer>();
         if (renderer != null)
         {
@@ -43,7 +43,7 @@ public class ParedActivable : MonoBehaviour
             audioSource.playOnAwake = false;
         }
 
-        // Estado inicial
+
         if (empiezaActiva)
         {
             ActivarInmediato();
@@ -60,7 +60,7 @@ public class ParedActivable : MonoBehaviour
 
         estaActiva = true;
 
-        // Activar colliders
+
         foreach (var col in colliders)
         {
             if (col != null)
@@ -69,13 +69,13 @@ public class ParedActivable : MonoBehaviour
             }
         }
 
-        // Efectos visuales
+
         if (efectoActivacion != null)
         {
             Instantiate(efectoActivacion, transform.position, Quaternion.identity);
         }
 
-        // Sonido
+
         if (sonidoActivacion != null && audioSource != null)
         {
             audioSource.PlayOneShot(sonidoActivacion);
@@ -93,7 +93,7 @@ public class ParedActivable : MonoBehaviour
 
         estaActiva = false;
 
-        // Desactivar colliders
+
         foreach (var col in colliders)
         {
             if (col != null)
@@ -102,13 +102,13 @@ public class ParedActivable : MonoBehaviour
             }
         }
 
-        // Efectos visuales
+
         if (efectoDesactivacion != null)
         {
             Instantiate(efectoDesactivacion, transform.position, Quaternion.identity);
         }
 
-        // Sonido
+
         if (sonidoDesactivacion != null && audioSource != null)
         {
             audioSource.PlayOneShot(sonidoDesactivacion);
@@ -145,23 +145,17 @@ public class ParedActivable : MonoBehaviour
 
     void OnDrawGizmos()
     {
+
+        if (Application.isPlaying) return;
+
         Collider c = GetComponent<Collider>();
         if (c == null) return;
 
-        // Color según estado (en play mode)
-        if (Application.isPlaying)
-        {
-            Gizmos.color = estaActiva ? colorActivo : colorInactivo;
-        }
-        else
-        {
-            // En editor, mostrar según configuración inicial
-            Gizmos.color = empiezaActiva ? colorActivo : colorInactivo;
-        }
 
-        if (c is BoxCollider)
+        Gizmos.color = empiezaActiva ? colorActivo : colorInactivo;
+
+        if (c is BoxCollider box)
         {
-            BoxCollider box = c as BoxCollider;
             Matrix4x4 oldMatrix = Gizmos.matrix;
             Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.DrawCube(box.center, box.size);
@@ -172,14 +166,16 @@ public class ParedActivable : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
+
+        if (Application.isPlaying) return;
+
         Collider c = GetComponent<Collider>();
         if (c == null) return;
 
         Gizmos.color = Color.yellow;
 
-        if (c is BoxCollider)
+        if (c is BoxCollider box)
         {
-            BoxCollider box = c as BoxCollider;
             Matrix4x4 oldMatrix = Gizmos.matrix;
             Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.DrawWireCube(box.center, box.size);

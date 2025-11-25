@@ -9,11 +9,11 @@ public class RotarBaculo : MonoBehaviour
     public float velocidadRotacion = 50f;
 
     [Tooltip("Eje de rotación (Y = vertical, X = horizontal, Z = profundidad)")]
-    public Vector3 ejeRotacion = Vector3.up; // Vector3.up es el eje Y
+    public Vector3 ejeRotacion = Vector3.up; 
 
     void Update()
     {
-        // Rotar el objeto sobre su eje
+
         transform.Rotate(ejeRotacion * velocidadRotacion * Time.deltaTime);
     }
 }

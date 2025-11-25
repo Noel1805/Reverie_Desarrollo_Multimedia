@@ -13,7 +13,7 @@ public class CajaInteractuable : MonoBehaviour
     [SerializeField] private KeyCode teclaAbrir = KeyCode.E;
 
     [Header("UI (Opcional)")]
-    [SerializeField] private GameObject indicadorUI; // Para mostrar "Presiona E"
+    [SerializeField] private GameObject indicadorUI; 
 
     private bool yaAbierta = false;
     private Transform jugador;
@@ -21,12 +21,12 @@ public class CajaInteractuable : MonoBehaviour
 
     void Start()
     {
-        // Buscar al jugador por tag
+
         GameObject jugadorObj = GameObject.FindGameObjectWithTag("Player");
         if (jugadorObj != null)
             jugador = jugadorObj.transform;
 
-        // Si se olvidan de asignar spawnPoint, usamos la posición de la caja
+
         if (spawnPoint == null)
             spawnPoint = this.transform;
 
@@ -38,15 +38,15 @@ public class CajaInteractuable : MonoBehaviour
     {
         if (yaAbierta || jugador == null) return;
 
-        // Verificar distancia al jugador
+
         float distancia = Vector3.Distance(transform.position, jugador.position);
         enRango = distancia <= distanciaInteraccion;
 
-        // Mostrar/ocultar indicador
+
         if (indicadorUI != null)
             indicadorUI.SetActive(enRango);
 
-        // Detectar input para abrir
+
         if (enRango && Input.GetKeyDown(teclaAbrir))
             AbrirCaja();
     }
@@ -61,19 +61,19 @@ public class CajaInteractuable : MonoBehaviour
         }
         else
         {
-            // Elegir un ítem aleatorio
+
             int index = Random.Range(0, prefabsItems.Length);
             GameObject prefab = prefabsItems[index];
 
             if (prefab != null)
             {
-                // Instanciar clon en el spawnPoint
+
                 GameObject clon = Instantiate(prefab, spawnPoint.position, spawnPoint.rotation);
 
-                // Mantener escala original del prefab
+
                 clon.transform.localScale = prefab.transform.localScale;
 
-                // Opcional: salto hacia arriba
+
                 Rigidbody rb = clon.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
@@ -84,11 +84,11 @@ public class CajaInteractuable : MonoBehaviour
             }
         }
 
-        // Destruir la caja
+
         Destroy(gameObject);
     }
 
-    // Para visualizar el rango en el editor
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;

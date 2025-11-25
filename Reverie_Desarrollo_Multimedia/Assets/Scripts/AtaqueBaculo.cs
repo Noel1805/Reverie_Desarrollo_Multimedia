@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-// SCRIPT COMPLETO: Colocar este script en el JUGADOR
+
 public class AtaqueBaculo : MonoBehaviour
 {
     [Header("Referencias")]
@@ -55,12 +55,12 @@ public class AtaqueBaculo : MonoBehaviour
 
     // ===== SISTEMA DE BUFFS DE DAÑO =====
     [Header("Debug Buff de Daño")]
-    [SerializeField] private float multiplicadorDañoActual = 1f;   // 1 = daño normal
-    [SerializeField] private float dañoDebugActual = 0f;           // daño final aplicado en el último ataque
+    [SerializeField] private float multiplicadorDañoActual = 1f;   
+    [SerializeField] private float dañoDebugActual = 0f;           
 
     private Coroutine buffDañoActivo;
 
-    // ===== NUEVO: CONTROL DE MOVIMIENTO =====
+
     private New_CharacterController movimiento;
     private bool movimientoDesactivadoPorAtaque = false;
 
@@ -75,25 +75,22 @@ public class AtaqueBaculo : MonoBehaviour
 
     void Update()
     {
-        // Verificar que tenga el báculo equipado
+
         if (equipador != null && !equipador.TieneBaculoEquipado())
             return;
 
-        // Si está en cooldown o ya está atacando, no hacer nada
+
         if (!puedeAtacar || atacando)
             return;
 
-        // ===== SOLO PERMITIR ATAQUE SI EL JUGADOR ESTÁ QUIETO =====
-        // Usamos el input básico (Horizontal/Vertical). Si usas otros ejes, cámbialos aquí.
+
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
 
-        // Si hay input de movimiento, no permitir iniciar ataque
+
         if (Mathf.Abs(h) > 0.01f || Mathf.Abs(v) > 0.01f)
             return;
-        // =============================================
 
-        // Detectar teclas de ataque
         if (Input.GetKeyDown(teclaAtaque1))
         {
             IniciarAtaque(nombreAtaque1, 1);
@@ -114,24 +111,22 @@ public class AtaqueBaculo : MonoBehaviour
         puedeAtacar = false;
         ataqueActualIndex = numeroAtaque;
 
-        // ===== BLOQUEAR MOVIMIENTO MIENTRAS ATACA =====
+
         if (movimiento != null && movimiento.enabled)
         {
             movimiento.enabled = false;
             movimientoDesactivadoPorAtaque = true;
         }
-        // ==============================================
 
-        // Reproducir animación
         if (animator != null)
         {
             animator.SetTrigger(nombreAnimacion);
         }
 
-        // Esperar el tiempo de la animación antes de lanzar el ataque
+
         Invoke(nameof(LanzarAtaque), tiempoLanzamiento);
 
-        // Reiniciar cooldown
+
         Invoke(nameof(ReiniciarCooldown), cooldownAtaque);
     }
 
@@ -139,29 +134,29 @@ public class AtaqueBaculo : MonoBehaviour
     {
         if (ataqueActualIndex == 3)
         {
-            // Ataque 3 es AOE
+
             LanzarAOE();
         }
         else
         {
-            // Ataques 1 y 2 son proyectiles
+
             LanzarVFX();
         }
 
         atacando = false;
 
-        // ===== VOLVER A PERMITIR MOVIMIENTO DESPUÉS DEL ATAQUE =====
+
         if (movimiento != null && movimientoDesactivadoPorAtaque)
         {
             movimiento.enabled = true;
             movimientoDesactivadoPorAtaque = false;
         }
-        // ============================================================
+        
     }
 
     void LanzarVFX()
     {
-        // Seleccionar el VFX y configuración según el ataque
+
         GameObject vfxPrefab = null;
         float velocidad = 0;
         float daño = 0;
@@ -186,24 +181,24 @@ public class AtaqueBaculo : MonoBehaviour
             return;
         }
 
-        // Determinar punto de lanzamiento
+
         Transform puntoOrigen = puntoLanzamiento != null ? puntoLanzamiento : transform;
 
-        // Calcular rotación final
+
         Quaternion rotacionFinal = puntoOrigen.rotation * Quaternion.Euler(rotacionProyectil);
 
-        // Instanciar el VFX
+
         GameObject vfx = Instantiate(vfxPrefab, puntoOrigen.position, rotacionFinal);
         vfx.transform.localScale = escalaProyectil;
 
-        // Añadir componente de proyectil
+
         ProyectilVFX proyectil = vfx.GetComponent<ProyectilVFX>();
         if (proyectil == null)
         {
             proyectil = vfx.AddComponent<ProyectilVFX>();
         }
 
-        // Aplicar daño con multiplicador de buff
+
         proyectil.Inicializar(velocidad, ObtenerDañoModificado(daño), transform.forward);
     }
 
@@ -215,23 +210,23 @@ public class AtaqueBaculo : MonoBehaviour
             return;
         }
 
-        // Calcular posición base (delante del jugador)
+
         Vector3 posicionBase = transform.position + transform.forward * distanciaAOE;
 
-        // Aplicar offset adicional (relativo a la rotación del jugador)
+
         Vector3 offsetRotado = transform.TransformDirection(offsetPosicionAOE);
         Vector3 posicionFinal = posicionBase + offsetRotado;
 
-        // Aplicar rotación configurada
+
         Quaternion rotacionFinal = Quaternion.Euler(rotacionAOE);
 
-        // Instanciar el VFX del AOE
+
         GameObject vfxAOE = Instantiate(vfxAtaque3, posicionFinal, rotacionFinal);
         vfxAOE.transform.localScale = escalaAOE;
 
         Debug.Log($"[AOE] Instanciado en: {posicionFinal} | Rotación: {rotacionAOE} | Escala: {escalaAOE}");
 
-        // Intentar reproducir Particle Systems
+
         ParticleSystem[] particulas = vfxAOE.GetComponentsInChildren<ParticleSystem>();
         if (particulas.Length > 0)
         {
@@ -254,14 +249,14 @@ public class AtaqueBaculo : MonoBehaviour
 #endif
         }
 
-        // Añadir componente AOE
+
         AtaqueAOE aoe = vfxAOE.GetComponent<AtaqueAOE>();
         if (aoe == null)
         {
             aoe = vfxAOE.AddComponent<AtaqueAOE>();
         }
 
-        // Aplicar daño con multiplicador de buff
+
         aoe.Inicializar(radioAOE, ObtenerDañoModificado(dañoAtaque3), duracionVFXAOE);
     }
 
@@ -272,18 +267,16 @@ public class AtaqueBaculo : MonoBehaviour
 
     // ===== SISTEMA DE BUFFS DE DAÑO =====
 
-    /// <summary>
-    /// Método público para aplicar buff de daño desde power-ups externos
-    /// </summary>
+
     public void AplicarBuffDaño(float multiplicador, float duracion)
     {
-        // Si ya hay un buff activo, detenerlo
+
         if (buffDañoActivo != null)
         {
             StopCoroutine(buffDañoActivo);
         }
 
-        // Iniciar nuevo buff
+
         buffDañoActivo = StartCoroutine(BuffDañoCoroutine(multiplicador, duracion));
     }
 
@@ -300,9 +293,7 @@ public class AtaqueBaculo : MonoBehaviour
         Debug.Log("[Ataque] ⏰ Buff de daño terminado. Daño normal restaurado.");
     }
 
-    /// <summary>
-    /// Obtiene el daño modificado aplicando el multiplicador actual
-    /// </summary>
+
     public float ObtenerDañoModificado(float dañoBase)
     {
         float dañoFinal = dañoBase * multiplicadorDañoActual;
@@ -312,29 +303,25 @@ public class AtaqueBaculo : MonoBehaviour
             Debug.Log($"[Ataque] 🔥 Daño buffeado: {dañoBase} → {dañoFinal} (x{multiplicadorDañoActual})");
         }
 
-        // Guardar en debug para verlo en el Inspector
+
         dañoDebugActual = dañoFinal;
 
         return dañoFinal;
     }
 
-    /// <summary>
-    /// Obtiene el multiplicador actual (útil para mostrar en UI)
-    /// </summary>
+
     public float ObtenerMultiplicadorActual()
     {
         return multiplicadorDañoActual;
     }
 
-    /// <summary>
-    /// Verifica si hay un buff activo
-    /// </summary>
+
     public bool TieneBuffActivo()
     {
         return multiplicadorDañoActual > 1f;
     }
 
-    // Visualizar el área de AOE en el editor (SOLO en Scene View)
+
     void OnDrawGizmosSelected()
     {
 #if UNITY_EDITOR
@@ -371,7 +358,7 @@ public class AtaqueBaculo : MonoBehaviour
     }
 }
 
-// COMPONENTE PARA PROYECTILES (Ataques 1 y 2)
+
 public class ProyectilVFX : MonoBehaviour
 {
     private float velocidad;
@@ -387,7 +374,7 @@ public class ProyectilVFX : MonoBehaviour
         daño = dmg;
         direccion = dir.normalized;
 
-        // Añadir collider si no existe
+
         SphereCollider collider = GetComponent<SphereCollider>();
         if (collider == null)
         {
@@ -396,7 +383,7 @@ public class ProyectilVFX : MonoBehaviour
         collider.isTrigger = true;
         collider.radius = radioCollider;
 
-        // Añadir Rigidbody si no existe
+
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb == null)
         {
@@ -428,7 +415,7 @@ public class ProyectilVFX : MonoBehaviour
     }
 }
 
-// COMPONENTE PARA ATAQUE AOE (Ataque 3)
+
 public class AtaqueAOE : MonoBehaviour
 {
     private float radio;
@@ -440,10 +427,10 @@ public class AtaqueAOE : MonoBehaviour
         radio = rad;
         daño = dmg;
 
-        // Aplicar daño inmediatamente
+
         Invoke(nameof(AplicarDaño), 0.1f);
 
-        // Destruir después de la duración
+
         Destroy(gameObject, duracion);
     }
 

@@ -24,13 +24,13 @@ public class VidaEnemigo : MonoBehaviour
         }
     }
 
-    // NUEVO: Método para obtener la vida actual
+
     public float GetVidaActual()
     {
         return vidaActual;
     }
 
-    // NUEVO: Método para verificar si está muerto
+
     public bool EstaMuerto()
     {
         return estaMuerto;
@@ -43,7 +43,6 @@ public class VidaEnemigo : MonoBehaviour
         estaMuerto = true;
         Debug.Log($"💀 {gameObject.name} ha muerto");
 
-        // NO destruir aquí, el GrizartController lo maneja
-        // Destroy(gameObject);
+
     }
 }

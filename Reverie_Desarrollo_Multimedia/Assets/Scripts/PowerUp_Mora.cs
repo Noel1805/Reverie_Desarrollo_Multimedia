@@ -4,9 +4,9 @@ using System.Collections;
 public class PowerUp_Mora : MonoBehaviour
 {
     [Header("Configuración de la Mora")]
-    [SerializeField] private float cantidadPorTick = 1f; // 0.5 corazón (1 punto de vida)
-    [SerializeField] private int numeroTicks = 2;        // 2 ticks -> 1 corazón total
-    [SerializeField] private float intervaloEntreTicks = 2f; // cada 2 segundos
+    [SerializeField] private float cantidadPorTick = 1f; 
+    [SerializeField] private int numeroTicks = 2;        
+    [SerializeField] private float intervaloEntreTicks = 2f; 
     [SerializeField] private KeyCode teclaRecoger = KeyCode.E;
     [SerializeField] private float distanciaRecoger = 2f;
 
@@ -25,18 +25,18 @@ public class PowerUp_Mora : MonoBehaviour
     private VidaKaven vidaKaven;
     private bool estaActivo = true;
 
-    // Para ocultar completamente la mora
+
     private MeshRenderer[] meshRenderers;
     private Collider[] colliders;
     private AudioSource audioSource;
 
     void Start()
     {
-        // Buscar TODOS los renderers y colliders de la mora (root + hijos)
+
         meshRenderers = GetComponentsInChildren<MeshRenderer>();
         colliders = GetComponentsInChildren<Collider>();
 
-        // Buscar al jugador por tag y su script de vida
+
         jugador = GameObject.FindGameObjectWithTag("Player");
 
         if (jugador != null)
@@ -44,7 +44,7 @@ public class PowerUp_Mora : MonoBehaviour
             vidaKaven = jugador.GetComponent<VidaKaven>();
             if (vidaKaven == null)
             {
-                // Por si el script está en un hijo
+
                 vidaKaven = jugador.GetComponentInChildren<VidaKaven>();
             }
         }
@@ -64,7 +64,7 @@ public class PowerUp_Mora : MonoBehaviour
             Debug.LogError("[Mora START] ❌ No se encontró ningún objeto con tag 'Player'!");
         }
 
-        // Crear / obtener AudioSource si hace falta
+
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null && sonidoRecoger != null)
         {
@@ -78,7 +78,7 @@ public class PowerUp_Mora : MonoBehaviour
         if (!estaActivo || jugador == null)
             return;
 
-        // Centro de la mora usando el primer collider si existe
+
         Vector3 centroMora = transform.position;
         if (colliders != null && colliders.Length > 0 && colliders[0] != null)
         {
@@ -144,7 +144,7 @@ public class PowerUp_Mora : MonoBehaviour
                 yield break;
             }
 
-            // Curar medio corazón (1 punto de vida)
+
             vidaKaven.Curar(cantidadPorTick);
 
             if (mostrarDebug)
@@ -152,7 +152,7 @@ public class PowerUp_Mora : MonoBehaviour
                 Debug.Log($"[Mora CURAR] Tick {i + 1}/{numeroTicks}: Curado {cantidadPorTick} vida.");
             }
 
-            // Esperar entre ticks, menos después del último
+
             if (i < numeroTicks - 1 && intervaloEntreTicks > 0f)
                 yield return new WaitForSeconds(intervaloEntreTicks);
         }
@@ -163,7 +163,7 @@ public class PowerUp_Mora : MonoBehaviour
 
     void ConsumirYRespawnear()
     {
-        // Efectos visuales y sonido
+
         if (efectoRecoger != null)
         {
             Instantiate(efectoRecoger, transform.position, Quaternion.identity);
@@ -174,7 +174,7 @@ public class PowerUp_Mora : MonoBehaviour
             audioSource.PlayOneShot(sonidoRecoger);
         }
 
-        // 🔹 LÍNEA NUEVA PARA SUMAR LA FRUTA
+
         GetComponent<FruitCollectNotifier>()?.NotificarRecoleccion();
 
         OcultarMora();
@@ -239,25 +239,25 @@ public class PowerUp_Mora : MonoBehaviour
             Debug.Log("[Mora] ✨ Power-up de mora ha reaparecido");
     }
 
-    // Gizmos solo en Scene View
+
     void OnDrawGizmosSelected()
     {
-        // Centro usando primer collider si existe
+
         Collider c = GetComponentInChildren<Collider>();
         Vector3 centro = c != null ? c.bounds.center : transform.position;
 
-        // Área de recolección
-        Gizmos.color = new Color(0.5f, 0, 1f, 0.25f); // moradito translúcido
+
+        Gizmos.color = new Color(0.5f, 0, 1f, 0.25f); 
         Gizmos.DrawSphere(centro, distanciaRecoger);
 
         Gizmos.color = new Color(0.7f, 0.2f, 1f, 1f);
         Gizmos.DrawWireSphere(centro, distanciaRecoger);
 
-        // Línea hacia arriba para identificar
+
         Gizmos.color = Color.magenta;
         Gizmos.DrawLine(centro, centro + Vector3.up * 2f);
 
-        // Punto central
+
         Gizmos.color = Color.white;
         Gizmos.DrawSphere(centro, 0.1f);
     }

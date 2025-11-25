@@ -2,9 +2,7 @@
 using UnityEngine.UI;
 using System.Collections;
 
-/// <summary>
-/// Script para el trigger de la cabaña que activa los finales
-/// </summary>
+
 public class TriggerCabana : MonoBehaviour
 {
     [Header("Referencias de Canvas")]
@@ -27,17 +25,17 @@ public class TriggerCabana : MonoBehaviour
 
     void Start()
     {
-        // Asegurar que los canvas estén desactivados al inicio
+
         if (canvasFinalBueno != null)
             canvasFinalBueno.SetActive(false);
 
         if (canvasFinalMalo != null)
             canvasFinalMalo.SetActive(false);
 
-        // Crear panel de fade
+
         CreateFadePanel();
 
-        // Verificar que el objeto tenga un Collider con isTrigger = true
+
         Collider col = GetComponent<Collider>();
         if (col == null)
         {
@@ -51,7 +49,7 @@ public class TriggerCabana : MonoBehaviour
 
     private void CreateFadePanel()
     {
-        // Buscar o crear el panel de fade
+
         Canvas canvas = FindObjectOfType<Canvas>();
         if (canvas != null)
         {
@@ -66,7 +64,7 @@ public class TriggerCabana : MonoBehaviour
 
             fadeImage = fadePanel.AddComponent<Image>();
             fadeImage.color = new Color(colorFade.r, colorFade.g, colorFade.b, 0f);
-            fadeImage.raycastTarget = false; // No bloquear clicks durante el fade
+            fadeImage.raycastTarget = false; 
 
             fadePanel.SetActive(false);
         }
@@ -78,37 +76,37 @@ public class TriggerCabana : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        // Verificar que sea el jugador y que no se haya activado antes
+
         if (yaActivado) return;
 
         if (other.CompareTag("Player"))
         {
             yaActivado = true;
 
-            // Guardar referencias del jugador
+
             playerController = other.GetComponent<CharacterController>();
             playerMovement = other.GetComponent<New_CharacterController>();
 
             Debug.Log("🏠 Jugador entró a la cabaña - Iniciando transición al final");
 
-            // Iniciar transición
+
             StartCoroutine(TransicionAlFinal());
         }
     }
 
     private IEnumerator TransicionAlFinal()
     {
-        // Desactivar controles del jugador
+
         if (playerController != null)
             playerController.enabled = false;
         if (playerMovement != null)
             playerMovement.enabled = false;
 
-        // Fade to black
+
         if (fadePanel != null && fadeImage != null)
         {
             fadePanel.SetActive(true);
-            fadePanel.transform.SetAsLastSibling(); // Poner al frente
+            fadePanel.transform.SetAsLastSibling(); 
 
             float elapsed = 0f;
             while (elapsed < duracionFade)
@@ -120,10 +118,10 @@ public class TriggerCabana : MonoBehaviour
             }
         }
 
-        // Esperar un momento en negro
+
         yield return new WaitForSeconds(tiempoAntesDeActivarCanvas);
 
-        // Verificar frutas y activar el canvas correspondiente
+
         int frutasRecogidas = ObtenerFrutasRecogidas();
         bool todosLasConsiguio = (frutasRecogidas >= frutasNecesariasParaBuenFinal);
 
@@ -138,7 +136,7 @@ public class TriggerCabana : MonoBehaviour
             ActivarFinalMalo();
         }
 
-        // Fade out del panel negro (para revelar el canvas del final)
+
         if (fadePanel != null && fadeImage != null)
         {
             float elapsed = 0f;
@@ -153,22 +151,19 @@ public class TriggerCabana : MonoBehaviour
             fadePanel.SetActive(false);
         }
 
-        // Desbloquear cursor para interactuar con botones del final
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
         Debug.Log("🎬 Transición al final completada");
     }
 
-    /// <summary>
-    /// Obtiene las frutas recogidas del FruitCounterUI
-    /// </summary>
+
     private int ObtenerFrutasRecogidas()
     {
         if (FruitCounterUI.Instance != null)
         {
-            // Necesitamos acceder a frutasRecogidas, pero es privado
-            // Vamos a agregar un método público en FruitCounterUI
+
             return FruitCounterUI.Instance.GetFrutasRecogidas();
         }
 
@@ -182,7 +177,7 @@ public class TriggerCabana : MonoBehaviour
         {
             canvasFinalBueno.SetActive(true);
 
-            // Asegurar que el RectTransform ocupe toda la pantalla
+
             RectTransform rectTransform = canvasFinalBueno.GetComponent<RectTransform>();
             if (rectTransform != null)
             {
@@ -193,7 +188,7 @@ public class TriggerCabana : MonoBehaviour
                 rectTransform.SetAsLastSibling();
             }
 
-            // Asegurar que el CanvasGroup permita interacción
+
             CanvasGroup canvasGroup = canvasFinalBueno.GetComponent<CanvasGroup>();
             if (canvasGroup == null)
                 canvasGroup = canvasFinalBueno.AddComponent<CanvasGroup>();
@@ -214,7 +209,7 @@ public class TriggerCabana : MonoBehaviour
         {
             canvasFinalMalo.SetActive(true);
 
-            // Asegurar que el RectTransform ocupe toda la pantalla
+
             RectTransform rectTransform = canvasFinalMalo.GetComponent<RectTransform>();
             if (rectTransform != null)
             {
@@ -225,7 +220,7 @@ public class TriggerCabana : MonoBehaviour
                 rectTransform.SetAsLastSibling();
             }
 
-            // Asegurar que el CanvasGroup permita interacción
+
             CanvasGroup canvasGroup = canvasFinalMalo.GetComponent<CanvasGroup>();
             if (canvasGroup == null)
                 canvasGroup = canvasFinalMalo.AddComponent<CanvasGroup>();
@@ -242,11 +237,11 @@ public class TriggerCabana : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        // Visualizar el trigger en el editor
+
         Collider col = GetComponent<Collider>();
         if (col != null)
         {
-            Gizmos.color = new Color(0f, 1f, 0f, 0.3f); // Verde transparente
+            Gizmos.color = new Color(0f, 1f, 0f, 0.3f); 
             Gizmos.DrawCube(col.bounds.center, col.bounds.size);
 
             Gizmos.color = Color.green;

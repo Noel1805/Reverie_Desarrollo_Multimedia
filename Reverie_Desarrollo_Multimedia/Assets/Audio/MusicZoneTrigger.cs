@@ -15,7 +15,7 @@ public class MusicZoneTrigger : MonoBehaviour
     [SerializeField] private MusicType musicType;
     [SerializeField] private bool changeOnEnter = true;
 
-    // Esto se ejecuta cuando Unity carga el objeto
+
     private void Start()
     {
         Debug.Log($"[MusicZone START] Zona inicializada: {gameObject.name} - Tipo: {musicType}");
@@ -35,7 +35,7 @@ public class MusicZoneTrigger : MonoBehaviour
         }
     }
 
-    // Esto detecta CUALQUIER cosa que entre
+
     private void OnTriggerEnter(Collider other)
     {
         Debug.Log($"<color=yellow>[MusicZone TRIGGER] {gameObject.name} detectó: {other.gameObject.name} (Tag: {other.tag})</color>");
@@ -57,7 +57,7 @@ public class MusicZoneTrigger : MonoBehaviour
         }
     }
 
-    // También detecta salidas
+
     private void OnTriggerExit(Collider other)
     {
         Debug.Log($"<color=cyan>[MusicZone EXIT] {other.gameObject.name} salió de {gameObject.name}</color>");
@@ -98,6 +98,9 @@ public class MusicZoneTrigger : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+
+        if (Application.isPlaying) return;
+
         Collider col = GetComponent<Collider>();
         if (col != null && col.enabled)
         {
@@ -139,6 +142,7 @@ public class MusicZoneTrigger : MonoBehaviour
             }
         }
     }
+
 
     public void TriggerMusicChange()
     {

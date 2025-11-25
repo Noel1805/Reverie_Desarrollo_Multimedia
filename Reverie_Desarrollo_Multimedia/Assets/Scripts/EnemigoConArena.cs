@@ -16,7 +16,7 @@ public class EnemigoConArena : MonoBehaviour
     {
         jugador = GameObject.FindGameObjectWithTag("Player");
 
-        // Buscar arena más cercana si no está asignada
+
         if (arenaAsociada == null && buscarArenaAutomaticamente)
         {
             arenaAsociada = FindObjectOfType<ArenaCombate>();

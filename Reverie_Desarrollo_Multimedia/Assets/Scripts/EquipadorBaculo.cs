@@ -1,10 +1,10 @@
 using UnityEngine;
 
-// SCRIPT 2: Colocar este script en el JUGADOR (el personaje)
+
 public class EquipadorBaculo : MonoBehaviour
 {
     [Header("Referencias")]
-    [SerializeField] private Transform puntoAgarre; // Arrastra aquí tu PuntoAgarre desde la jerarquía
+    [SerializeField] private Transform puntoAgarre; 
 
     [Header("Ajustes de Posición")]
     [SerializeField] private Vector3 posicionLocal = Vector3.zero;
@@ -20,7 +20,7 @@ public class EquipadorBaculo : MonoBehaviour
             return;
         }
 
-        // Desactivar físicas si las tiene
+
         Rigidbody rb = baculo.GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -33,10 +33,10 @@ public class EquipadorBaculo : MonoBehaviour
             col.enabled = false;
         }
 
-        // Parentear el báculo al PuntoAgarre
+
         baculo.transform.SetParent(puntoAgarre);
 
-        // Aplicar posición y rotación personalizadas
+
         baculo.transform.localPosition = posicionLocal;
         baculo.transform.localRotation = Quaternion.Euler(rotacionLocal);
 

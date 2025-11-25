@@ -41,7 +41,7 @@ public class ArenaCombate : MonoBehaviour
             centroArena = transform;
         }
 
-        // Buscar paredes automáticamente si está habilitado
+
         if (buscarParedesAutomaticamente && (paredes == null || paredes.Length == 0))
         {
             paredes = GetComponentsInChildren<ParedActivable>();
@@ -59,7 +59,7 @@ public class ArenaCombate : MonoBehaviour
             audioSource.playOnAwake = false;
         }
 
-        // Inicializar lista de enemigos
+
         ActualizarListaEnemigos();
     }
 
@@ -67,7 +67,7 @@ public class ArenaCombate : MonoBehaviour
     {
         if (arenaActiva)
         {
-            // Verificar si todos los enemigos están muertos
+
             ActualizarListaEnemigos();
 
             if (requiereEnemigosVivos && enemigosVivos.Count == 0)
@@ -77,14 +77,14 @@ public class ArenaCombate : MonoBehaviour
         }
         else
         {
-            // Verificar si el jugador está en rango
+
             if (activarAlDetectarJugador && jugador != null)
             {
                 float distancia = Vector3.Distance(centroArena.position, jugador.transform.position);
 
                 if (distancia <= rangoDeteccion)
                 {
-                    // Verificar condición de enemigos
+
                     ActualizarListaEnemigos();
 
                     if (!requiereEnemigosVivos || enemigosVivos.Count >= minimoEnemigosParaActivar)
@@ -100,7 +100,6 @@ public class ArenaCombate : MonoBehaviour
     {
         enemigosVivos.Clear();
 
-        // Usar enemigos asignados si existen
         if (enemigosAsignados != null && enemigosAsignados.Length > 0)
         {
             foreach (var enemigo in enemigosAsignados)
@@ -113,7 +112,7 @@ public class ArenaCombate : MonoBehaviour
         }
         else
         {
-            // Buscar enemigos por tag en el área
+
             GameObject[] todosEnemigos = GameObject.FindGameObjectsWithTag(tagEnemigo);
 
             foreach (var enemigo in todosEnemigos)
@@ -121,7 +120,7 @@ public class ArenaCombate : MonoBehaviour
                 if (enemigo != null && enemigo.activeSelf)
                 {
                     float distancia = Vector3.Distance(centroArena.position, enemigo.transform.position);
-                    if (distancia <= rangoDeteccion * 1.5f) // Un poco más de rango para enemigos
+                    if (distancia <= rangoDeteccion * 1.5f) 
                     {
                         enemigosVivos.Add(enemigo);
                     }
@@ -136,7 +135,7 @@ public class ArenaCombate : MonoBehaviour
 
         arenaActiva = true;
 
-        // Activar todas las paredes
+
         if (paredes != null)
         {
             foreach (var pared in paredes)
@@ -148,13 +147,13 @@ public class ArenaCombate : MonoBehaviour
             }
         }
 
-        // Efecto visual
+
         if (efectoActivacionArena != null)
         {
             Instantiate(efectoActivacionArena, centroArena.position, Quaternion.identity);
         }
 
-        // Sonido
+
         if (sonidoActivacionArena != null && audioSource != null)
         {
             audioSource.PlayOneShot(sonidoActivacionArena);
@@ -172,7 +171,7 @@ public class ArenaCombate : MonoBehaviour
 
         arenaActiva = false;
 
-        // Desactivar todas las paredes
+
         if (paredes != null)
         {
             foreach (var pared in paredes)
@@ -190,13 +189,13 @@ public class ArenaCombate : MonoBehaviour
         }
     }
 
-    // Método para activar manualmente desde otro script
+
     public void ActivarManualmente()
     {
         ActivarArena();
     }
 
-    // Método para desactivar manualmente
+
     public void DesactivarManualmente()
     {
         DesactivarArena();
@@ -211,15 +210,15 @@ public class ArenaCombate : MonoBehaviour
     {
         Transform centro = centroArena != null ? centroArena : transform;
 
-        // Rango de detección
+
         Gizmos.color = arenaActiva ? Color.red : Color.yellow;
         Gizmos.DrawWireSphere(centro.position, rangoDeteccion);
 
-        // Área de combate (más grande)
+
         Gizmos.color = new Color(1f, 0f, 0f, 0.1f);
         Gizmos.DrawWireSphere(centro.position, rangoDeteccion * 1.5f);
 
-        // Línea hacia arriba para identificar el centro
+
         Gizmos.color = Color.cyan;
         Gizmos.DrawLine(centro.position, centro.position + Vector3.up * 5f);
     }

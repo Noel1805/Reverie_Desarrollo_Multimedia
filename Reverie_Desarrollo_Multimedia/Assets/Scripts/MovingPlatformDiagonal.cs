@@ -5,15 +5,15 @@ public class MovingPlatformDiagonal : MonoBehaviour
     public enum StartPoint { PositionA, PositionB }
     public enum DiagonalDirection
     {
-        UpRight,        // Arriba-Derecha
-        UpLeft,         // Arriba-Izquierda
-        DownRight,      // Abajo-Derecha
-        DownLeft,       // Abajo-Izquierda
-        ForwardUp,      // Adelante-Arriba
-        ForwardDown,    // Adelante-Abajo
-        BackwardUp,     // Atrás-Arriba
-        BackwardDown,   // Atrás-Abajo
-        Custom          // Dirección personalizada
+        UpRight,        
+        UpLeft,         
+        DownRight,      
+        DownLeft,       
+        ForwardUp,     
+        ForwardDown,    
+        BackwardUp,     
+        BackwardDown,   
+        Custom          
     }
 
     [Header("Dirección Diagonal")]
@@ -32,8 +32,8 @@ public class MovingPlatformDiagonal : MonoBehaviour
     [Min(0.0001f)] public float travelTime = 3f;
 
     [Header("Tiempos de espera")]
-    [Min(0f)] public float waitAtA = 2.0f; // pausa en A
-    [Min(0f)] public float waitAtB = 2.0f; // pausa en B
+    [Min(0f)] public float waitAtA = 2.0f; 
+    [Min(0f)] public float waitAtB = 2.0f;
 
     [Header("Arranque")]
     public StartPoint startAt = StartPoint.PositionA;
@@ -42,11 +42,11 @@ public class MovingPlatformDiagonal : MonoBehaviour
     [Tooltip("Si hay Rigidbody (recomendado isKinematic=true), mover con MovePosition en FixedUpdate.")]
     public bool useRigidbody = false;
 
-    // ---- Internos ----
-    private Vector3 A;      // posición base (Editor)
-    private Vector3 B;      // A + dirección diagonal * distance
-    private float cycle;    // duración total del ciclo
-    private float phase;    // línea de tiempo acumulada
+
+    private Vector3 A;      
+    private Vector3 B;      
+    private float cycle;    
+    private float phase;    
     private Rigidbody rb;
     private Vector3 finalDirection;
 
@@ -54,22 +54,22 @@ public class MovingPlatformDiagonal : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
 
-        // Capturar A al iniciar
+
         A = transform.position;
 
-        // Determinar la dirección según el tipo seleccionado
+
         finalDirection = GetDiagonalDirection();
 
-        // Normalizar y calcular B
+
         finalDirection = finalDirection.normalized;
         distance = Mathf.Abs(distance);
         B = A + finalDirection * distance;
 
-        // Construir ciclo
+
         cycle = waitAtA + travelTime + waitAtB + travelTime;
         if (cycle < 0.0001f) cycle = 0.0001f;
 
-        // Inicializar phase según arranque
+
         switch (startAt)
         {
             case StartPoint.PositionA:
@@ -83,34 +83,34 @@ public class MovingPlatformDiagonal : MonoBehaviour
         }
     }
 
-    // Obtener la dirección diagonal según el tipo seleccionado
+
     Vector3 GetDiagonalDirection()
     {
         switch (diagonalType)
         {
             case DiagonalDirection.UpRight:
-                return new Vector3(1f, 1f, 0f);     // X+, Y+
+                return new Vector3(1f, 1f, 0f);     
 
             case DiagonalDirection.UpLeft:
-                return new Vector3(-1f, 1f, 0f);    // X-, Y+
+                return new Vector3(-1f, 1f, 0f);   
 
             case DiagonalDirection.DownRight:
-                return new Vector3(1f, -1f, 0f);    // X+, Y-
+                return new Vector3(1f, -1f, 0f);    
 
             case DiagonalDirection.DownLeft:
-                return new Vector3(-1f, -1f, 0f);   // X-, Y-
+                return new Vector3(-1f, -1f, 0f);  
 
             case DiagonalDirection.ForwardUp:
-                return new Vector3(0f, 1f, 1f);     // Z+, Y+
+                return new Vector3(0f, 1f, 1f);    
 
             case DiagonalDirection.ForwardDown:
-                return new Vector3(0f, -1f, 1f);    // Z+, Y-
+                return new Vector3(0f, -1f, 1f);   
 
             case DiagonalDirection.BackwardUp:
-                return new Vector3(0f, 1f, -1f);    // Z-, Y+
+                return new Vector3(0f, 1f, -1f);    
 
             case DiagonalDirection.BackwardDown:
-                return new Vector3(0f, -1f, -1f);   // Z-, Y-
+                return new Vector3(0f, -1f, -1f);  
 
             case DiagonalDirection.Custom:
                 return customDirection;
@@ -151,7 +151,7 @@ public class MovingPlatformDiagonal : MonoBehaviour
 
         if (p < waitAtA)
         {
-            // Pausa en A
+
             SetPosition(A, viaRigidbody);
             return;
         }
@@ -159,7 +159,7 @@ public class MovingPlatformDiagonal : MonoBehaviour
 
         if (p < travelTime)
         {
-            // Movimiento A -> B
+
             float t = p / travelTime;
             Vector3 target = Vector3.LerpUnclamped(A, B, t);
             SetPosition(target, viaRigidbody);
@@ -169,13 +169,13 @@ public class MovingPlatformDiagonal : MonoBehaviour
 
         if (p < waitAtB)
         {
-            // Pausa en B
+
             SetPosition(B, viaRigidbody);
             return;
         }
         p -= waitAtB;
 
-        // Movimiento B -> A
+
         {
             float t = p / travelTime;
             Vector3 target = Vector3.LerpUnclamped(B, A, t);
@@ -209,31 +209,31 @@ public class MovingPlatformDiagonal : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
-        // En Editor: mostrar la trayectoria diagonal
+
         Vector3 a = Application.isPlaying ? A : transform.position;
         Vector3 dir = Application.isPlaying ? finalDirection : GetDiagonalDirection().normalized;
         float d = distance;
         Vector3 b = a + dir * d;
 
-        // Línea de trayectoria
+
         Gizmos.color = Color.yellow;
         Gizmos.DrawLine(a, b);
 
-        // Punto A (inicio)
+
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(a, 0.15f);
 
-        // Punto B (final)
+
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(b, 0.15f);
 
-        // Flecha para indicar dirección
+
         Vector3 midPoint = (a + b) / 2f;
         Gizmos.color = Color.cyan;
         DrawArrow(midPoint, dir * 0.5f);
     }
 
-    // Dibujar una flecha en los Gizmos
+
     void DrawArrow(Vector3 pos, Vector3 direction)
     {
         Gizmos.DrawRay(pos, direction);

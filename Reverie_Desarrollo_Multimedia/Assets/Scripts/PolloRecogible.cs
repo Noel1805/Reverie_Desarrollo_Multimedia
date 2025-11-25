@@ -12,13 +12,13 @@ public class PolloRecogible : MonoBehaviour
     private Transform jugador;
     private bool enRango = false;
 
-    // Guardar posición y rotación inicial
+
     private Vector3 posicionInicial;
     private Quaternion rotacionInicial;
 
     void Awake()
     {
-        // Guardar posición al inicio del juego
+
         posicionInicial = transform.position;
         rotacionInicial = transform.rotation;
         Debug.Log($"PolloRecogible: Posición inicial guardada en {posicionInicial}");
@@ -92,7 +92,7 @@ public class PolloRecogible : MonoBehaviour
         {
             if (!jugadorScript.TienePollo())
             {
-                // Pasar las posiciones iniciales al equipar
+
                 jugadorScript.EquiparPollo(gameObject, posicionInicial, rotacionInicial);
             }
             else

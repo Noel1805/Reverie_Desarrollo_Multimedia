@@ -1,14 +1,14 @@
 using UnityEngine;
 
-// Script para CameraTarget - Rota automáticamente con el movimiento del jugador
+
 public class CameraFollowPlayer : MonoBehaviour
 {
     [Header("Referencias")]
-    public Transform player; // Arrastra aquí al Player
+    public Transform player; 
 
     [Header("Seguimiento")]
     public float followSpeed = 10f;
-    public Vector3 offset = new Vector3(0, 2, 0); // Altura sobre el jugador
+    public Vector3 offset = new Vector3(0, 2, 0); 
 
     [Header("Rotación Automática")]
     public bool autoRotate = true;
@@ -36,7 +36,7 @@ public class CameraFollowPlayer : MonoBehaviour
     {
         if (player == null) return;
 
-        // Seguir posición del jugador
+
         Vector3 targetPosition = player.position + offset;
         transform.position = Vector3.Lerp(
             transform.position,
@@ -44,24 +44,24 @@ public class CameraFollowPlayer : MonoBehaviour
             followSpeed * Time.deltaTime
         );
 
-        // Rotar basándose en el movimiento del jugador
+
         if (autoRotate)
         {
             Vector3 playerMovement = player.position - lastPlayerPosition;
-            playerMovement.y = 0; // Ignorar movimiento vertical
+            playerMovement.y = 0; 
 
-            // Si el jugador se está moviendo
+
             if (playerMovement.magnitude > 0.01f)
             {
                 idleTime = 0f;
 
-                // Calcular dirección de movimiento
+
                 Vector3 direction = playerMovement.normalized;
 
-                // Crear rotación objetivo mirando en esa dirección
+
                 Quaternion targetRotation = Quaternion.LookRotation(direction);
 
-                // Rotar suavemente hacia esa dirección
+
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     targetRotation,
@@ -70,10 +70,10 @@ public class CameraFollowPlayer : MonoBehaviour
             }
             else
             {
-                // Si el jugador está quieto, rotar hacia donde mira
+
                 idleTime += Time.deltaTime;
 
-                if (idleTime > 0.3f) // Pequeño delay antes de rotar cuando está quieto
+                if (idleTime > 0.3f) 
                 {
                     Vector3 playerForward = player.forward;
                     playerForward.y = 0;

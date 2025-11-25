@@ -1,6 +1,5 @@
 using UnityEngine;
 
-// Script para el báculo (colocar en el objeto del báculo en el suelo)
 public class BaculoPickup : MonoBehaviour
 {
     [SerializeField] private float distanciaInteraccion = 2f;

@@ -6,7 +6,7 @@ public class GrizartController : MonoBehaviour
     [Header("Referencias")]
     [SerializeField] private Animator animator;
     [SerializeField] private CharacterController characterController;
-    [SerializeField] private Transform player;          // Referencia a Kaven
+    [SerializeField] private Transform player;         
 
     [Header("Detección")]
     [SerializeField] private float radioDeteccion = 10f;
@@ -14,11 +14,11 @@ public class GrizartController : MonoBehaviour
     [Header("Movimiento")]
     [SerializeField] private float velocidadCaminar = 2f;
     [SerializeField] private float velocidadRotacion = 5f;
-    [SerializeField] private float distanciaMinima = 2f; // Distancia para detenerse y atacar
+    [SerializeField] private float distanciaMinima = 2f; 
 
     [Header("Ataque")]
     [SerializeField] private float rangoAtaque = 2.5f;
-    [SerializeField] private float danoAtaque = 0.5f;   // Media vida
+    [SerializeField] private float danoAtaque = 0.5f;   
     [SerializeField] private float cooldownAtaque = 2f;
 
     [Header("Timing Ataque")]
@@ -26,8 +26,8 @@ public class GrizartController : MonoBehaviour
     [SerializeField] private float tiempoImpactoAtaque = 0.4f;
 
     [Header("Límites de Isla")]
-    [SerializeField] private Vector3 centroIsla;        // Centro de la isla
-    [SerializeField] private float radioIsla = 15f;     // Radio máximo de la isla
+    [SerializeField] private Vector3 centroIsla;        
+    [SerializeField] private float radioIsla = 15f;     
 
     [Header("Muerte")]
     [SerializeField] private float tiempoAntesDeDestruir = 4f;
@@ -43,7 +43,7 @@ public class GrizartController : MonoBehaviour
 
     void Start()
     {
-        // Referencias básicas
+
         if (animator == null)
             animator = GetComponent<Animator>();
 
@@ -52,7 +52,7 @@ public class GrizartController : MonoBehaviour
 
         vidaEnemigo = GetComponent<VidaEnemigo>();
 
-        // 1) Si no hay Player asignado en el Inspector, lo busco por Tag
+
         if (player == null)
         {
             GameObject jugadorGO = GameObject.FindGameObjectWithTag("Player");
@@ -62,7 +62,7 @@ public class GrizartController : MonoBehaviour
             }
         }
 
-        // 2) Si ya tengo player (arrastrado o encontrado), busco VidaKaven SIEMPRE
+
         if (player != null)
         {
             vidaKaven = player.GetComponent<VidaKaven>();
@@ -81,7 +81,7 @@ public class GrizartController : MonoBehaviour
             Debug.LogError("[Grizart] ❌ No encontré ningún GameObject con tag 'Player'.");
         }
 
-        // Centro de la isla por defecto
+
         if (centroIsla == Vector3.zero)
         {
             centroIsla = transform.position;
@@ -92,7 +92,7 @@ public class GrizartController : MonoBehaviour
     {
         if (estaMuerto) return;
 
-        // Comprobar muerte del enemigo
+
         if (vidaEnemigo != null && vidaEnemigo.GetVidaActual() <= 0)
         {
             Morir();
@@ -107,12 +107,12 @@ public class GrizartController : MonoBehaviour
         {
             float distanciaAlJugador = Vector3.Distance(transform.position, player.position);
 
-            // Está en rango de ataque
+
             if (distanciaAlJugador <= rangoAtaque)
             {
                 DetenerseYAtacar();
             }
-            // Está en rango de detección pero aún lejos
+
             else if (distanciaAlJugador <= radioDeteccion)
             {
                 PerseguirJugador();
@@ -136,18 +136,18 @@ public class GrizartController : MonoBehaviour
 
     void PerseguirJugador()
     {
-        // Calcular dirección hacia el jugador
+
         Vector3 direccion = (player.position - transform.position).normalized;
         Vector3 nuevaPos = transform.position + direccion * velocidadCaminar * Time.deltaTime;
 
-        // Limitar a la isla
+
         if (Vector3.Distance(nuevaPos, centroIsla) > radioIsla)
         {
             Idle();
             return;
         }
 
-        // Rotar hacia el jugador
+
         Vector3 dirRot = player.position - transform.position;
         dirRot.y = 0f;
 
@@ -157,12 +157,12 @@ public class GrizartController : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, rotObjetivo, velocidadRotacion * Time.deltaTime);
         }
 
-        // Mover usando CharacterController
+
         characterController.Move(direccion * velocidadCaminar * Time.deltaTime);
-        // Gravedad simple
+
         characterController.Move(Vector3.down * 9.81f * Time.deltaTime);
 
-        // Activar animación de caminar
+
         animator.SetBool("IsWalking", true);
     }
 
@@ -172,7 +172,7 @@ public class GrizartController : MonoBehaviour
 
         animator.SetBool("IsWalking", false);
 
-        // Mirar hacia el jugador
+
         Vector3 dirRot = player.position - transform.position;
         dirRot.y = 0f;
         if (dirRot != Vector3.zero)
@@ -181,7 +181,7 @@ public class GrizartController : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, rotObjetivo, velocidadRotacion * Time.deltaTime);
         }
 
-        // Comprobar cooldown
+
         if (puedeAtacar && Time.time - tiempoUltimoAtaque >= cooldownAtaque)
         {
             Debug.Log("[Grizart] 🟨 Condición cumplida, llamando a Atacar()");
@@ -196,31 +196,31 @@ public class GrizartController : MonoBehaviour
 
         Debug.Log("[Grizart] ⚔ Grizart intenta atacar");
 
-        // Disparar animación
+
         animator.SetTrigger("Attack");
 
-        // Aplicar daño después de un pequeño delay para que coincida con el golpe
+
         StartCoroutine(AplicarDanioConDelay());
 
-        // Programar cuándo vuelve a poder atacar
+
         Invoke(nameof(ReiniciarAtaque), cooldownAtaque);
     }
 
     private System.Collections.IEnumerator AplicarDanioConDelay()
     {
-        // Esperar hasta el momento del impacto
+
         yield return new WaitForSeconds(tiempoImpactoAtaque);
 
         if (estaMuerto || vidaKaven == null || player == null)
             yield break;
 
-        // Comprobar que todavía esté en rango
+
         float distancia = Vector3.Distance(transform.position, player.position);
         Debug.Log("[Grizart] ⏱ Momento de impacto. Distancia: " + distancia);
 
         if (distancia <= rangoAtaque)
         {
-            vidaKaven.RecibirDano(danoAtaque, true);  // true = ignora cooldown de daño
+            vidaKaven.RecibirDano(danoAtaque, true);  
 
             Debug.Log($"[Grizart] ✅ Daño aplicado a Kaven (delay): {danoAtaque}");
         }
@@ -247,20 +247,20 @@ public class GrizartController : MonoBehaviour
 
         Debug.Log("[Grizart] 💀 Enemigo ha muerto - Iniciando animación");
 
-        // Limpia animaciones que puedan seguir molestando
+
         animator.SetBool("IsWalking", false);
         animator.ResetTrigger("Attack");
 
-        // ACTIVAR ANIMACIÓN DE MUERTE
+
         animator.SetBool("IsDead", true);
 
         if (characterController != null)
             characterController.enabled = false;
 
-        // Desactivamos la IA
+
         this.enabled = false;
 
-        // ESPERAR a que la animación termine ANTES de hacer fade out
+
         StartCoroutine(EsperarYDestruir());
     }
 
@@ -268,12 +268,12 @@ public class GrizartController : MonoBehaviour
     {
         Debug.Log("[Grizart] ⏱️ Esperando a que termine la animación de muerte...");
 
-        // ESPERAR el tiempo de la animación de muerte
+
         yield return new WaitForSeconds(tiempoAntesDeDestruir);
 
         Debug.Log("[Grizart] ✅ Animación de muerte completada, iniciando fade out");
 
-        // AHORA sí, iniciar el fade out
+
         yield return StartCoroutine(FadeOutAndDestroy());
     }
 
@@ -281,10 +281,10 @@ public class GrizartController : MonoBehaviour
     {
         Debug.Log("[Grizart] 🌫️ Iniciando fade out");
 
-        // Tomamos TODOS los renderers del enemigo
+
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
 
-        // Cacheamos los materiales instanciados
+
         Material[][] materialesPorRenderer = new Material[renderers.Length][];
         for (int i = 0; i < renderers.Length; i++)
         {
@@ -292,7 +292,7 @@ public class GrizartController : MonoBehaviour
         }
 
         float tiempo = 0f;
-        float duracion = 2f; // tiempo del fade en segundos
+        float duracion = 2f; 
 
         while (tiempo < duracion)
         {
@@ -306,7 +306,7 @@ public class GrizartController : MonoBehaviour
                 {
                     if (mat == null) continue;
 
-                    // URP Lit usa _BaseColor, Standard usa _Color
+
                     if (mat.HasProperty("_BaseColor"))
                     {
                         Color c = mat.GetColor("_BaseColor");
@@ -331,18 +331,18 @@ public class GrizartController : MonoBehaviour
 
 
 
-    // Gizmos en el editor
+
     void OnDrawGizmosSelected()
     {
-        // Radio de detección
+
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, radioDeteccion);
 
-        // Radio de ataque
+
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, rangoAtaque);
 
-        // Límite de la isla
+
         Gizmos.color = Color.blue;
         Vector3 centro = centroIsla == Vector3.zero ? transform.position : centroIsla;
         Gizmos.DrawWireSphere(centro, radioIsla);

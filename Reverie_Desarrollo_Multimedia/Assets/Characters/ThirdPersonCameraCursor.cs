@@ -8,7 +8,7 @@ public class ThirdPersonCameraCursor : MonoBehaviour
     public Transform target;
 
     [Header("Órbita")]
-    public float distance = 0.3f;     // ultra cercano
+    public float distance = 0.3f; 
     public float height = 1.1f;
     public float lookHeight = 1.4f;
     public float mouseSensitivityX = 120f;
@@ -30,12 +30,12 @@ public class ThirdPersonCameraCursor : MonoBehaviour
             Debug.LogWarning("ThirdPersonCameraCursor: asigna un target (CameraTarget del Player).");
         }
 
-        // Inicializar rotación desde la cámara actual
+
         Vector3 euler = transform.eulerAngles;
         yaw = euler.y;
         pitch = euler.x;
 
-        // Bloquear y ocultar cursor
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -47,7 +47,7 @@ public class ThirdPersonCameraCursor : MonoBehaviour
         float mouseX = Input.GetAxis("Mouse X");
         float mouseY = Input.GetAxis("Mouse Y");
 
-        // Zona muerta
+
         if (Mathf.Abs(mouseX) < mouseDeadZone) mouseX = 0f;
         if (Mathf.Abs(mouseY) < mouseDeadZone) mouseY = 0f;
 

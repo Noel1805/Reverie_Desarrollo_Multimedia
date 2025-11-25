@@ -7,7 +7,7 @@ public class PowerUp_Mango : MonoBehaviour
     [SerializeField] private float multiplicadorDaño = 1.2f;
     [SerializeField] private float duracion = 20f;
     [SerializeField] private KeyCode teclaRecoger = KeyCode.E;
-    [SerializeField] private float distanciaRecoger = 2f; // Distancia para recoger
+    [SerializeField] private float distanciaRecoger = 2f; 
 
     [Header("Efectos Visuales (Opcional)")]
     [SerializeField] private GameObject efectoRecoger;
@@ -23,18 +23,18 @@ public class PowerUp_Mango : MonoBehaviour
     private GameObject jugador;
     private bool estaActivo = true;
 
-    // 🔹 Ahora son arreglos para manejar TODOS los meshes/colliders
+
     private MeshRenderer[] meshRenderers;
     private Collider[] colliders;
     private AudioSource audioSource;
 
     void Start()
     {
-        // Buscar TODOS los renderers y colliders del mango (en el root y en los hijos)
+
         meshRenderers = GetComponentsInChildren<MeshRenderer>();
         colliders = GetComponentsInChildren<Collider>();
 
-        // Buscar al jugador por tag
+
         jugador = GameObject.FindGameObjectWithTag("Player");
 
         if (mostrarDebug)
@@ -51,7 +51,7 @@ public class PowerUp_Mango : MonoBehaviour
             Debug.LogError("[Mango START] ❌ No se encontró ningún objeto con tag 'Player'!");
         }
 
-        // Crear / obtener AudioSource si hace falta
+
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null && sonidoRecoger != null)
         {
@@ -65,7 +65,7 @@ public class PowerUp_Mango : MonoBehaviour
         if (!estaActivo || jugador == null)
             return;
 
-        // Centro del mango usando el primer collider si existe
+
         Vector3 centroMango = transform.position;
         if (colliders != null && colliders.Length > 0 && colliders[0] != null)
         {
@@ -108,7 +108,7 @@ public class PowerUp_Mango : MonoBehaviour
         if (mostrarDebug)
             Debug.Log($"[Mango RECOGER] Intentando recoger... Jugador: {jugador.name}");
 
-        // Buscar el script de ataque (en el jugador o sus hijos)
+
         AtaqueBaculo ataqueBaculo = jugador.GetComponent<AtaqueBaculo>();
         if (ataqueBaculo == null)
             ataqueBaculo = jugador.GetComponentInChildren<AtaqueBaculo>();
@@ -126,7 +126,7 @@ public class PowerUp_Mango : MonoBehaviour
                 }
             }
 
-            // Aun así consumimos el mango
+
             ConsumirYRespawnear();
             return;
         }
@@ -167,7 +167,7 @@ public class PowerUp_Mango : MonoBehaviour
             audioSource.PlayOneShot(sonidoRecoger);
         }
 
-        // 🔹 LÍNEA NUEVA PARA EL CONTADOR DE FRUTAS
+
         GetComponent<FruitCollectNotifier>()?.NotificarRecoleccion();
 
         OcultarMango();

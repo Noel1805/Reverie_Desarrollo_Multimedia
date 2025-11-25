@@ -34,12 +34,12 @@ public class New_CharacterController : MonoBehaviour
     private Vector3 externalVelocity = Vector3.zero;
     private float turnSmoothVelocity;
 
-    // Detección de plataformas verticales
+
     private Transform verticalPlatform;
     private Vector3 lastPlatformPosition;
     private bool wasOnVerticalPlatform;
 
-    // Sistema del pollo
+
     private GameObject polloEquipado;
     private bool tienePollo = false;
     private float jumpHeightOriginal;
@@ -56,24 +56,24 @@ public class New_CharacterController : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
 
-        // Si no se asigna cámara, usa la principal
+
         if (cameraTransform == null && Camera.main != null)
             cameraTransform = Camera.main.transform;
 
-        // Si no se asigna animator, intenta obtenerlo del objeto
+
         if (animator == null)
             animator = GetComponent<Animator>();
 
-        // Crear punto de equipo del pollo si no existe
+
         if (puntoEquipoPollo == null)
         {
             GameObject puntoTemp = new GameObject("PuntoEquipoPollo");
             puntoTemp.transform.SetParent(transform);
-            puntoTemp.transform.localPosition = new Vector3(0, 2f, 0); // Ajusta según tu personaje
+            puntoTemp.transform.localPosition = new Vector3(0, 2f, 0); 
             puntoEquipoPollo = puntoTemp.transform;
         }
 
-        // Guardar valores originales
+
         jumpHeightOriginal = jumpHeight;
         gravityOriginal = gravity;
     }
@@ -87,7 +87,7 @@ public class New_CharacterController : MonoBehaviour
 
     void DetectVerticalPlatform()
     {
-        // Solo detectar si estamos en el suelo
+
         if (!characterController.isGrounded)
         {
             verticalPlatform = null;
@@ -95,18 +95,18 @@ public class New_CharacterController : MonoBehaviour
             return;
         }
 
-        // Raycast corto hacia abajo
+
         RaycastHit hit;
         float rayDistance = characterController.height / 2f + 0.2f;
 
         if (Physics.Raycast(transform.position, Vector3.down, out hit, rayDistance))
         {
-            // Buscar MovingPlatformRangeStable
+
             MovingPlatformRangeStable platform = hit.collider.GetComponentInParent<MovingPlatformRangeStable>();
 
             if (platform != null)
             {
-                // Si es una nueva plataforma
+
                 if (verticalPlatform != platform.transform)
                 {
                     verticalPlatform = platform.transform;
@@ -115,10 +115,10 @@ public class New_CharacterController : MonoBehaviour
                 }
                 else
                 {
-                    // Calcular movimiento de la plataforma
+
                     Vector3 platformDelta = verticalPlatform.position - lastPlatformPosition;
 
-                    // Mover al jugador con la plataforma (especialmente en Y)
+
                     if (platformDelta.magnitude > 0.0001f)
                     {
                         characterController.Move(platformDelta * verticalPlatformStickiness);
@@ -143,15 +143,15 @@ public class New_CharacterController : MonoBehaviour
 
     void HandleMovement()
     {
-        // Detectar si está en el suelo
+
         IsGrounded = characterController.isGrounded;
 
         if (IsGrounded && Velocity.y < 0)
         {
-            Velocity.y = -2f; // mantenerlo pegado al suelo
+            Velocity.y = -2f; 
         }
 
-        // Input de movimiento
+
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
         CurrentInput = new Vector2(horizontal, vertical);
@@ -163,11 +163,11 @@ public class New_CharacterController : MonoBehaviour
 
         if (IsMoving)
         {
-            // Detectar sprint
+
             bool isSprinting = Input.GetKey(KeyCode.LeftShift);
             currentSpeed = isSprinting ? SrpintSpeed : WalkSpeed;
 
-            // Ángulo según la cámara
+
             float camYaw = (cameraTransform != null) ? cameraTransform.eulerAngles.y : 0f;
             float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + camYaw;
 
@@ -178,10 +178,10 @@ public class New_CharacterController : MonoBehaviour
                 rotationSpeed * Time.deltaTime
             );
 
-            // Girar el personaje
+
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
-            // Mover según la dirección de la cámara
+
             moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
         }
         else
@@ -189,10 +189,10 @@ public class New_CharacterController : MonoBehaviour
             currentSpeed = 0f;
         }
 
-        // Salto (usa los valores actuales que pueden estar modificados por el pollo)
+
         if (Input.GetButtonDown("Jump") && IsGrounded)
         {
-            // Verificar saltos disponibles si tiene pollo
+
             if (tienePollo)
             {
                 if (saltosRestantesPollo > 0)
@@ -212,7 +212,7 @@ public class New_CharacterController : MonoBehaviour
             }
             else
             {
-                // Salto normal sin pollo
+
                 Velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
 
                 if (animator != null)
@@ -220,23 +220,23 @@ public class New_CharacterController : MonoBehaviour
             }
         }
 
-        // Aplicar gravedad (reducida si estamos en plataforma vertical)
+
         float gravityMultiplier = wasOnVerticalPlatform ? 0.3f : 1f;
         Velocity.y += gravity * gravityMultiplier * Time.deltaTime;
 
-        // Movimiento final
+
         Vector3 finalMovement = (moveDir * currentSpeed + externalVelocity) * Time.deltaTime;
         finalMovement.y += Velocity.y * Time.deltaTime;
 
         characterController.Move(finalMovement);
 
-        // Desactivar IsJumping cuando toca el suelo
+
         if (IsGrounded && Velocity.y <= 0f)
         {
             if (animator != null)
                 animator.SetBool("IsJumping", false);
 
-            // Si tiene pollo y ya no quedan saltos, desequiparlo al aterrizar
+
             if (tienePollo && saltosRestantesPollo <= 0)
             {
                 RegresarPolloAPosicionInicial();
@@ -248,7 +248,7 @@ public class New_CharacterController : MonoBehaviour
     {
         if (animator == null) return;
 
-        // Speed: 0 = idle, 0.5 = walk, 1 = sprint
+
         float SpeedPercent = 0f;
         if (IsMoving)
         {
@@ -270,13 +270,13 @@ public class New_CharacterController : MonoBehaviour
         polloEquipado = pollo;
         saltosRestantesPollo = 4;
 
-        // Guardar posición inicial del pollo
+
         posicionInicialPollo = posInicial;
         rotacionInicialPollo = rotInicial;
 
         Debug.Log($"Posición inicial del pollo recibida: {posicionInicialPollo}");
 
-        // Limpiar componentes físicos del pollo (si existieran)
+
         Rigidbody polloRb = pollo.GetComponent<Rigidbody>();
         if (polloRb != null)
             Destroy(polloRb);
@@ -285,18 +285,18 @@ public class New_CharacterController : MonoBehaviour
         if (polloCollider != null)
             polloCollider.enabled = false;
 
-        // Desactivar script de recogida
+
         PolloRecogible polloScript = pollo.GetComponent<PolloRecogible>();
         if (polloScript != null)
             polloScript.enabled = false;
 
-        // Posicionar en la cabeza
+
         pollo.transform.SetParent(puntoEquipoPollo);
         pollo.transform.localPosition = new Vector3(0, -0.2f, 0);
         pollo.transform.localRotation = Quaternion.Euler(0, 90, 0);
         pollo.transform.localScale = Vector3.one * 2f;
 
-        // Modificar valores de salto y gravedad
+
         jumpHeight = jumpHeightOriginal * multiplicadorSaltoPollo;
         gravity = gravityOriginal * multiplicadorGravedadPollo;
 
@@ -313,25 +313,23 @@ public class New_CharacterController : MonoBehaviour
         Debug.Log("=== Iniciando regreso del pollo ===");
         tienePollo = false;
 
-        // Restaurar valores originales de jugador
+
         jumpHeight = jumpHeightOriginal;
         gravity = gravityOriginal;
 
-        // Desparentar el pollo
+ 
         polloEquipado.transform.SetParent(null);
 
-        // Restaurar escala
+
         polloEquipado.transform.localScale = Vector3.one;
 
-        // Restaurar posición y rotación inicial
+
         polloEquipado.transform.position = posicionInicialPollo;
         polloEquipado.transform.rotation = rotacionInicialPollo;
 
         Debug.Log($"Pollo reposicionado en: {posicionInicialPollo}");
 
-        // NO AGREGAR RIGIDBODY - El pollo no lo tiene originalmente
 
-        // Restaurar Collider
         Collider polloCollider = polloEquipado.GetComponent<Collider>();
         if (polloCollider != null)
         {
@@ -339,7 +337,7 @@ public class New_CharacterController : MonoBehaviour
             Debug.Log($"✓ Collider restaurado: {polloCollider.GetType().Name}");
         }
 
-        // Reactivar script de recogida
+
         PolloRecogible polloScript = polloEquipado.GetComponent<PolloRecogible>();
         if (polloScript != null)
         {
@@ -360,11 +358,11 @@ public class New_CharacterController : MonoBehaviour
 
         tienePollo = false;
 
-        // Restaurar valores originales
+
         jumpHeight = jumpHeightOriginal;
         gravity = gravityOriginal;
 
-        // Destruir el pollo
+
         Destroy(polloEquipado);
         polloEquipado = null;
 
@@ -381,23 +379,23 @@ public class New_CharacterController : MonoBehaviour
         return tienePollo ? saltosRestantesPollo : 0;
     }
 
-    // Método público para aplicar fuerzas externas
+
     public void AddExternalVelocity(Vector3 velocity)
     {
         externalVelocity = velocity;
     }
 
-    // Debug visual
     void OnDrawGizmos()
     {
-        if (!Application.isPlaying || characterController == null) return;
 
-        // Raycast de detección
+        if (Application.isPlaying) return;
+
+        if (characterController == null) return;
+
         Gizmos.color = wasOnVerticalPlatform ? Color.green : Color.yellow;
         float rayDistance = characterController.height / 2f + 0.2f;
         Gizmos.DrawLine(transform.position, transform.position + Vector3.down * rayDistance);
 
-        // COMENTADO: Visualizar punto del pollo
         /*
         if (puntoEquipoPollo != null)
         {
